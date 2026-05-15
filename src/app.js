@@ -46,16 +46,17 @@ socket.on("earthquake", (data) => {
 
   addHistory(data);
 
+  if (data.latitude && data.longitude) {
   updateHypocenter(
     data.latitude,
     data.longitude
   );
 
   updateSvgHypocenter(
-  data.latitude ?? 35,
-  data.longitude ?? 135
-);
-});
+    data.latitude,
+    data.longitude
+  );
+}
 
 socket.on("dmdata-telegram", (telegram) => {
   console.log("ブラウザでdmdata受信:");

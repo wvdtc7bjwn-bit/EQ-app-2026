@@ -111,9 +111,16 @@ async function startDmdataSocket() {
         type: "pong",
         pingId: data.pingId
       }));
+    
 
       console.log("pong送信:", data.pingId);
 
+      return;
+    }
+
+    if (data.type === "error") {
+      console.log("dmdata エラー:");
+      console.log(data);
       return;
     }
 
