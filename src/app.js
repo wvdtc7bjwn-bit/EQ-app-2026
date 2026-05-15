@@ -17,15 +17,11 @@ import {
 } from "./history.js";
 
 import {
-  updateHypocenter
-} from "./map.js";
+  initializeCanvasMap,
+  updateCanvasHypocenter
+} from "./map/canvasMap.js";
 
-import {
-  initializeSvgMap,
-  updateSvgHypocenter
-} from "./map/japanSvgMap.js";
-
-initializeSvgMap();
+initializeCanvasMap();
 setupPanelToggle();
 
 socket.on("earthquake", (data) => {
@@ -46,12 +42,7 @@ socket.on("earthquake", (data) => {
   addHistory(data);
 
   if (data.latitude && data.longitude) {
-    updateHypocenter(
-      data.latitude,
-      data.longitude
-    );
-
-    updateSvgHypocenter(
+    updateCanvasHypocenter(
       data.latitude,
       data.longitude
     );
@@ -76,12 +67,7 @@ socket.on("eew", (data) => {
   );
 
   if (data.latitude && data.longitude) {
-    updateHypocenter(
-      data.latitude,
-      data.longitude
-    );
-
-    updateSvgHypocenter(
+    updateCanvasHypocenter(
       data.latitude,
       data.longitude
     );
