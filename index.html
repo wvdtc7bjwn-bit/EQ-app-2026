@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>地震アプリ</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #050914;
+      color: white;
+      font-family: "Segoe UI", "Hiragino Sans", "Meiryo", sans-serif;
+    }
+
+    #app {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
+
+    #sidebar {
+      width: 320px;
+      height: 100vh;
+      padding: 16px;
+      box-sizing: border-box;
+      overflow-y: auto;
+      background: #070d1a;
+      border-right: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    #map-area {
+      position: relative;
+      flex: 1;
+      height: 100%;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #0b1020;
+    }
+
+    .current-panel,
+    .history-panel,
+    .points-panel {
+      background: linear-gradient(180deg, #1b2435 0%, #151d2b 100%);
+      border-radius: 16px;
+      margin-bottom: 18px;
+      padding: 20px;
+      box-sizing: border-box;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+    }
+
+    #status-banner {
+      background: linear-gradient(180deg, #33445f 0%, #26354d 100%);
+      color: white;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-bottom: 20px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    #eew-area {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.25;
+      color: white;
+      margin-bottom: 10px;
+    }
+
+    #eew-area small {
+      font-size: 20px;
+      font-weight: 500;
+      opacity: 0.9;
+    }
+
+    #quake-time {
+      color: #a0aec0;
+      font-size: 18px;
+      font-weight: 500;
+      margin-bottom: 18px;
+    }
+
+    #quake-place {
+      font-size: 32px;
+      font-weight: 800;
+      line-height: 1.2;
+      color: white;
+      margin-bottom: 8px;
+    }
+
+    #intensity-box {
+      background: linear-gradient(180deg, #a73731 0%, #8d2926 100%);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    .intensity-label {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    #intensity-value {
+      font-size: 48px;
+      font-weight: 500;
+      line-height: 1;
+    }
+
+    #lng-box {
+      background: linear-gradient(180deg, #f5dc72 0%, #d7bf57 100%);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: #111;
+    }
+
+    .lng-top {
+      font-size: 24px;
+      font-weight: 800;
+    }
+
+    .lng-bottom {
+      font-size: 15px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    #lng-value {
+      font-size: 48px;
+      font-weight: 800;
+    }
+
+    .detail-box {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .detail-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .detail-row span {
+      font-size: 18px;
+      color: #cbd5e0;
+    }
+
+    .detail-row strong {
+      font-size: 32px;
+      font-weight: 600;
+      color: white;
+    }
+
+    .quake-desc {
+      color: #f5df8a;
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.5;
+      margin-top: 24px;
+    }
+
+    #tsunami-box {
+      background: #31486d;
+      color: white;
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      font-size: 22px;
+      font-weight: 700;
+      margin-top: 16px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #cbd5e0;
+    }
+
+    .history-card {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 12px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .history-intensity {
+      width: 50px;
+      height: 50px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: #1a202c;
+      flex-shrink: 0;
+    }
+
+    .history-intensity span {
+      font-size: 10px;
+      line-height: 1;
+    }
+
+    .history-intensity strong {
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .history-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .history-place {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    #points div {
+      padding: 10px 12px;
+      border-radius: 9px;
+      margin-bottom: 8px;
+      font-weight: 900;
+      color: #07111d;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    #update-time {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 1000;
+      background: rgba(0, 0, 0, 0.82);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 9px;
+      font-size: 20px;
+      font-weight: 900;
+    }
+
+    .hypocenter-icon {
+      color: #ff2e2e;
+      font-size: 44px;
+      font-weight: 900;
+      text-align: center;
+      text-shadow:
+        0 0 4px white,
+        0 0 10px #ffe45c,
+        0 0 18px #ffe45c;
+    }
+
+    #sidebar::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    #sidebar::-webkit-scrollbar-track {
+      background: #070d1a;
+    }
+
+    #sidebar::-webkit-scrollbar-thumb {
+      background: #2c3b55;
+      border-radius: 10px;
+    }
+
+    .leaflet-control-zoom {
+      border: none !important;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    .leaflet-control-zoom a {
+      background: #111827 !important;
+      color: white !important;
+      border: none !important;
+    }
+
+    .leaflet-control-attribution {
+      background: rgba(10, 16, 28, 0.75) !important;
+      color: #d7e4ff !important;
+    }
+
+    @media (max-width: 768px) {
+      #app {
+        flex-direction: column;
+      }
+
+      #sidebar {
+        order: 2;
+        width: 100%;
+        height: 52vh;
+      }
+
+      #map-area {
+        order: 1;
+        height: 48vh;
+      }
+
+      #map {
+        height: 100%;
+      }
+
+      #quake-place,
+      #eew-area {
+        font-size: 28px;
+      }
+
+      #intensity-value {
+        font-size: 42px;
+      }
+
+      .detail-row strong {
+        font-size: 28px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app">
+
+    <div id="sidebar">
+
+      <div class="current-panel" id="current-panel">
+
+        <div id="status-banner">
+          地震情報
+        </div>
+
+        <div class="quake-info">
+
+          <div id="eew-area" class="hidden">
+            --
+          </div>
+
+          <div id="quake-place">
+            読み込み中...
+          </div>
+
+          <div id="quake-time">
+            --
+          </div>
+
+          <div id="intensity-box">
+            <div class="intensity-label">
+              最大震度
+            </div>
+
+            <div id="intensity-value">
+              -
+            </div>
+          </div>
+
+          <div id="lng-box" class="hidden">
+            <div>
+              <div class="lng-top">推定</div>
+              <div class="lng-bottom">
+                最大長周期<br>
+                地震動階級
+              </div>
+            </div>
+
+            <div id="lng-value">1</div>
+          </div>
+
+          <div class="detail-box">
+            <div class="detail-row">
+              <span>マグニチュード</span>
+              <strong id="magnitude-value">-</strong>
+            </div>
+
+            <div class="detail-row">
+              <span>深さ</span>
+              <strong id="depth-value">-</strong>
+            </div>
+          </div>
+
+          <div class="quake-desc">
+            で地震がありました
+          </div>
+
+          <div id="tsunami-box">
+            津波情報：調査中
+          </div>
+
+        </div>
+      </div>
+
+      <div class="points-panel hidden" id="points-panel">
+        <div class="section-title">
+          各地の震度
+        </div>
+
+        <div id="points"></div>
+      </div>
+
+      <div class="history-panel" id="history-panel">
+        <div class="section-title">
+          地震履歴
+        </div>
+
+        <div id="history" class="history-list"></div>
+      </div>
+
+    </div>
+
+    <div id="map-area">
+      <div id="update-time">
+        更新待機中...
+      </div>
+
+      <div id="map"></div>
+    </div>
+
+  </div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="module" src="src/app.js"></script>
+</body>
+</html>
