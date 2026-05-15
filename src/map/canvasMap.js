@@ -10,7 +10,19 @@ import {
 let canvas = null;
 let ctx = null;
 let mapBounds = null;
+
+let cachedPolygons = [];
 let hypocenter = null;
+
+let view = {
+  scale: 1,
+  offsetX: 0,
+  offsetY: 0
+};
+
+let isDragging = false;
+let dragStart = null;
+let animationFrameId = null;
 
 export function initializeCanvasMap() {
   const mapArea =
@@ -53,8 +65,8 @@ export function initializeCanvasMap() {
   canvas.style.zIndex =
     "500";
 
-  canvas.style.pointerEvents =
-    "none";
+  canvas.style.cursor =
+    "grab";
 
   mapArea.appendChild(canvas);
 
@@ -63,6 +75,10 @@ export function initializeCanvasMap() {
 
   mapBounds =
     calculateProjectedBounds();
+
+  buildPolygonCache();
+
+  setupCanvasInteractions();
 
   drawMap();
 }
@@ -87,14 +103,11 @@ function calculateProjectedBounds() {
     polygons.forEach(polygon => {
       polygon.forEach(ring => {
         ring.forEach(coord => {
-          const lng =
-            coord[0];
-
-          const lat =
-            coord[1];
-
           const p =
-            projectLatLng(lat, lng);
+            projectLatLng(
+              coord[1],
+              coord[0]
+            );
 
           minX =
             Math.min(minX, p.x);
@@ -120,38 +133,167 @@ function calculateProjectedBounds() {
   };
 }
 
-function fitPoint(point) {
+function fitProjectedPoint(point) {
   const padding =
     40;
 
   const width =
-    svgMapConfig.width - padding * 2;
+    svgMapConfig.width -
+    padding * 2;
 
   const height =
-    svgMapConfig.height - padding * 2;
+    svgMapConfig.height -
+    padding * 2;
 
   const scaleX =
-    width / (mapBounds.maxX - mapBounds.minX);
+    width /
+    (mapBounds.maxX - mapBounds.minX);
 
   const scaleY =
-    height / (mapBounds.maxY - mapBounds.minY);
+    height /
+    (mapBounds.maxY - mapBounds.minY);
 
-  const scale =
+  const baseScale =
     Math.min(scaleX, scaleY);
 
   return {
     x:
       padding +
-      (point.x - mapBounds.minX) * scale,
+      (point.x - mapBounds.minX) *
+        baseScale,
 
     y:
       padding +
-      (point.y - mapBounds.minY) * scale
+      (point.y - mapBounds.minY) *
+        baseScale
   };
 }
 
+function buildPolygonCache() {
+  cachedPolygons = [];
+
+  japanGeoJson.features.forEach(feature => {
+    const geometry =
+      feature.geometry;
+
+    if (!geometry) return;
+
+    const polygons =
+      geometry.type === "Polygon"
+        ? [geometry.coordinates]
+        : geometry.coordinates;
+
+    polygons.forEach(polygon => {
+      polygon.forEach(ring => {
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = -Infinity;
+        let maxY = -Infinity;
+
+        const points =
+          ring.map(coord => {
+            const projected =
+              projectLatLng(
+                coord[1],
+                coord[0]
+              );
+
+            const fitted =
+              fitProjectedPoint(projected);
+
+            minX =
+              Math.min(minX, fitted.x);
+
+            minY =
+              Math.min(minY, fitted.y);
+
+            maxX =
+              Math.max(maxX, fitted.x);
+
+            maxY =
+              Math.max(maxY, fitted.y);
+
+            return fitted;
+          });
+
+        cachedPolygons.push({
+          points,
+          bounds: {
+            minX,
+            minY,
+            maxX,
+            maxY
+          }
+        });
+      });
+    });
+  });
+
+  console.log(
+    `cached polygons: ${cachedPolygons.length}`
+  );
+}
+
+function applyView(point) {
+  return {
+    x:
+      point.x * view.scale +
+      view.offsetX,
+
+    y:
+      point.y * view.scale +
+      view.offsetY
+  };
+}
+
+function getScreenBounds(bounds) {
+  return {
+    minX:
+      bounds.minX * view.scale +
+      view.offsetX,
+
+    minY:
+      bounds.minY * view.scale +
+      view.offsetY,
+
+    maxX:
+      bounds.maxX * view.scale +
+      view.offsetX,
+
+    maxY:
+      bounds.maxY * view.scale +
+      view.offsetY
+  };
+}
+
+function isVisible(bounds) {
+  const screenBounds =
+    getScreenBounds(bounds);
+
+  return !(
+    screenBounds.maxX < 0 ||
+    screenBounds.minX > canvas.width ||
+    screenBounds.maxY < 0 ||
+    screenBounds.minY > canvas.height
+  );
+}
+
+function requestDraw() {
+  if (animationFrameId) {
+    return;
+  }
+
+  animationFrameId =
+    requestAnimationFrame(() => {
+      animationFrameId =
+        null;
+
+      drawMap();
+    });
+}
+
 function drawMap() {
-  if (!ctx || !mapBounds) {
+  if (!ctx) {
     return;
   }
 
@@ -179,60 +321,33 @@ function drawMap() {
     "#dce6ff";
 
   ctx.lineWidth =
-    0.6;
+    Math.max(
+      0.35,
+      0.6 / view.scale
+    );
 
-  japanGeoJson.features.forEach(feature => {
-    const geometry =
-      feature.geometry;
-
-    if (!geometry) return;
-
-    if (geometry.type === "Polygon") {
-      drawPolygon(
-        geometry.coordinates
-      );
+  cachedPolygons.forEach(polygon => {
+    if (!isVisible(polygon.bounds)) {
+      return;
     }
 
-    else if (geometry.type === "MultiPolygon") {
-      geometry.coordinates.forEach(polygon => {
-        drawPolygon(
-          polygon
-        );
-      });
-    }
-  });
-
-  drawHypocenter();
-}
-
-function drawPolygon(polygonCoordinates) {
-  polygonCoordinates.forEach(ring => {
     ctx.beginPath();
 
-    ring.forEach((coord, index) => {
-      const lng =
-        coord[0];
-
-      const lat =
-        coord[1];
-
-      const projected =
-        projectLatLng(lat, lng);
-
-      const fitted =
-        fitPoint(projected);
+    polygon.points.forEach((point, index) => {
+      const p =
+        applyView(point);
 
       if (index === 0) {
         ctx.moveTo(
-          fitted.x,
-          fitted.y
+          p.x,
+          p.y
         );
       }
 
       else {
         ctx.lineTo(
-          fitted.x,
-          fitted.y
+          p.x,
+          p.y
         );
       }
     });
@@ -241,6 +356,8 @@ function drawPolygon(polygonCoordinates) {
     ctx.fill();
     ctx.stroke();
   });
+
+  drawHypocenter();
 }
 
 function drawHypocenter() {
@@ -255,10 +372,18 @@ function drawHypocenter() {
     );
 
   const fitted =
-    fitPoint(projected);
+    fitProjectedPoint(projected);
+
+  const p =
+    applyView(fitted);
 
   ctx.font =
-    "bold 48px sans-serif";
+    `bold ${
+      Math.max(
+        24,
+        48 / view.scale
+      )
+    }px sans-serif`;
 
   ctx.textAlign =
     "center";
@@ -267,7 +392,10 @@ function drawHypocenter() {
     "middle";
 
   ctx.lineWidth =
-    4;
+    Math.max(
+      2,
+      4 / view.scale
+    );
 
   ctx.strokeStyle =
     "white";
@@ -277,18 +405,130 @@ function drawHypocenter() {
 
   ctx.strokeText(
     "×",
-    fitted.x,
-    fitted.y
+    p.x,
+    p.y
   );
 
   ctx.fillText(
     "×",
-    fitted.x,
-    fitted.y
+    p.x,
+    p.y
   );
 }
 
-export function updateCanvasHypocenter(lat, lng) {
+function setupCanvasInteractions() {
+  canvas.addEventListener("wheel", event => {
+    event.preventDefault();
+
+    const rect =
+      canvas.getBoundingClientRect();
+
+    const mouseX =
+      (event.clientX - rect.left) *
+      (canvas.width / rect.width);
+
+    const mouseY =
+      (event.clientY - rect.top) *
+      (canvas.height / rect.height);
+
+    const zoomFactor =
+      event.deltaY < 0
+        ? 1.15
+        : 0.87;
+
+    const newScale =
+      Math.min(
+        12,
+        Math.max(
+          0.8,
+          view.scale *
+            zoomFactor
+        )
+      );
+
+    const scaleChange =
+      newScale / view.scale;
+
+    view.offsetX =
+      mouseX -
+      (mouseX - view.offsetX) *
+        scaleChange;
+
+    view.offsetY =
+      mouseY -
+      (mouseY - view.offsetY) *
+        scaleChange;
+
+    view.scale =
+      newScale;
+
+    requestDraw();
+  });
+
+  canvas.addEventListener("mousedown", event => {
+    isDragging =
+      true;
+
+    canvas.style.cursor =
+      "grabbing";
+
+    dragStart = {
+      x: event.clientX,
+      y: event.clientY,
+      offsetX:
+        view.offsetX,
+      offsetY:
+        view.offsetY
+    };
+  });
+
+  window.addEventListener("mousemove", event => {
+    if (
+      !isDragging ||
+      !dragStart
+    ) {
+      return;
+    }
+
+    const rect =
+      canvas.getBoundingClientRect();
+
+    const dx =
+      (event.clientX -
+        dragStart.x) *
+      (canvas.width /
+        rect.width);
+
+    const dy =
+      (event.clientY -
+        dragStart.y) *
+      (canvas.height /
+        rect.height);
+
+    view.offsetX =
+      dragStart.offsetX +
+      dx;
+
+    view.offsetY =
+      dragStart.offsetY +
+      dy;
+
+    requestDraw();
+  });
+
+  window.addEventListener("mouseup", () => {
+    isDragging =
+      false;
+
+    canvas.style.cursor =
+      "grab";
+  });
+}
+
+export function updateCanvasHypocenter(
+  lat,
+  lng
+) {
   if (
     lat === null ||
     lat === undefined ||
@@ -298,7 +538,7 @@ export function updateCanvasHypocenter(lat, lng) {
     hypocenter =
       null;
 
-    drawMap();
+    requestDraw();
 
     return;
   }
@@ -308,5 +548,5 @@ export function updateCanvasHypocenter(lat, lng) {
     lng
   };
 
-  drawMap();
+  requestDraw();
 }
