@@ -1,3 +1,16 @@
+function normalizeBody(body) {
+  if (typeof body !== "string") {
+    return body;
+  }
+
+  try {
+    return JSON.parse(body);
+  }
+  catch {
+    return body;
+  }
+}
+
 function convertDmdataIntensityText(maxInt) {
   const list = {
     "1": "1",
@@ -54,15 +67,35 @@ function getScaleList() {
   };
 }
 
+function getCoordinateValue(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  const number =
+    Number(value);
+
+  return Number.isNaN(number)
+    ? null
+    : number;
+}
+
 function parseDmdataEarthquake(telegram) {
   const body =
-    telegram.body;
+    normalizeBody(telegram.body);
 
   const earthquake =
     body?.earthquake;
 
   const hypocenter =
     earthquake?.hypocenter;
+
+  const coordinate =
+    hypocenter?.coordinate;
 
   const intensity =
     body?.intensity;
@@ -90,10 +123,14 @@ function parseDmdataEarthquake(telegram) {
       hypocenter?.depth?.value ?? "-",
 
     latitude:
-      null,
+      getCoordinateValue(
+        coordinate?.latitude
+      ),
 
     longitude:
-      null,
+      getCoordinateValue(
+        coordinate?.longitude
+      ),
 
     time:
       earthquake?.originTime ??
@@ -111,7 +148,7 @@ function parseDmdataEarthquake(telegram) {
 
 function parseVXSE51(telegram) {
   const body =
-    telegram.body;
+    normalizeBody(telegram.body);
 
   const intensity =
     body?.intensity;
@@ -159,13 +196,16 @@ function parseVXSE51(telegram) {
 
 function parseVXSE52(telegram) {
   const body =
-    telegram.body;
+    normalizeBody(telegram.body);
 
   const earthquake =
     body?.earthquake;
 
   const hypocenter =
     earthquake?.hypocenter;
+
+  const coordinate =
+    hypocenter?.coordinate;
 
   return {
     eventId:
@@ -187,10 +227,14 @@ function parseVXSE52(telegram) {
       hypocenter?.depth?.value ?? "-",
 
     latitude:
-      null,
+      getCoordinateValue(
+        coordinate?.latitude
+      ),
 
     longitude:
-      null,
+      getCoordinateValue(
+        coordinate?.longitude
+      ),
 
     time:
       earthquake?.originTime ??
