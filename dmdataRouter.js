@@ -1,7 +1,8 @@
 const {
   parseDmdataEarthquake,
   parseVXSE51,
-  parseVXSE52
+  parseVXSE52,
+  parseDmdataEew
 } = require("./dmdataParser");
 
 function routeTelegram(data, io) {
@@ -16,11 +17,6 @@ function routeTelegram(data, io) {
   console.log(`受信電文: ${code}`);
 
   switch (code) {
-
-    // =========================
-    // 震源・震度情報
-    // =========================
-
     case "VXSE53": {
       console.log("震源・震度情報 VXSE53 受信");
 
@@ -30,17 +26,10 @@ function routeTelegram(data, io) {
       console.log("UI変換後:");
       console.log(parsed);
 
-      io.emit(
-        "earthquake",
-        parsed
-      );
+      io.emit("earthquake", parsed);
 
       break;
     }
-
-    // =========================
-    // 震度速報
-    // =========================
 
     case "VXSE51": {
       console.log("震度速報 VXSE51 受信");
@@ -51,17 +40,10 @@ function routeTelegram(data, io) {
       console.log("UI変換後:");
       console.log(parsed);
 
-      io.emit(
-        "earthquake",
-        parsed
-      );
+      io.emit("earthquake", parsed);
 
       break;
     }
-
-    // =========================
-    // 震源情報
-    // =========================
 
     case "VXSE52": {
       console.log("震源情報 VXSE52 受信");
@@ -72,64 +54,47 @@ function routeTelegram(data, io) {
       console.log("UI変換後:");
       console.log(parsed);
 
-      io.emit(
-        "earthquake",
-        parsed
-      );
+      io.emit("earthquake", parsed);
 
       break;
     }
-
-    // =========================
-    // EEW
-    // =========================
 
     case "VXSE45":
     case "VXSE43": {
       console.log(`EEW受信: ${code}`);
 
-      io.emit(
-        "dmdata-telegram",
-        data
-      );
+      const parsed =
+        parseDmdataEew(data);
+
+      console.log("EEW UI変換後:");
+      console.log(parsed);
+
+      io.emit("eew", parsed);
 
       break;
     }
-
-    // =========================
-    // 津波
-    // =========================
 
     case "VTSE41":
     case "VTSE51": {
       console.log(`津波電文受信: ${code}`);
 
-      io.emit(
-        "tsunami",
-        data
-      );
+      io.emit("tsunami", data);
 
       break;
     }
-
-    // =========================
-    // 顕著地震
-    // =========================
 
     case "VXSE61": {
       console.log("顕著地震受信");
 
+      io.emit("dmdata-telegram", data);
+
       break;
     }
 
-    // =========================
-    // 未対応
-    // =========================
-
     default: {
-      console.log(
-        `未対応電文: ${code}`
-      );
+      console.log(`未対応電文: ${code}`);
+
+      io.emit("dmdata-telegram", data);
 
       break;
     }

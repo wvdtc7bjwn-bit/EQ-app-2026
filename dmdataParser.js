@@ -12,6 +12,11 @@ function normalizeBody(body) {
 }
 
 function convertDmdataIntensityText(maxInt) {
+  const value =
+    typeof maxInt === "object"
+      ? maxInt?.value ?? maxInt?.from ?? maxInt?.to
+      : maxInt;
+
   const list = {
     "1": "1",
     "2": "2",
@@ -24,10 +29,15 @@ function convertDmdataIntensityText(maxInt) {
     "7": "7"
   };
 
-  return list[maxInt] ?? "-";
+  return list[value] ?? "-";
 }
 
 function convertDmdataIntensityToScale(maxInt) {
+  const value =
+    typeof maxInt === "object"
+      ? maxInt?.value ?? maxInt?.from ?? maxInt?.to
+      : maxInt;
+
   const list = {
     "1": 10,
     "2": 20,
@@ -40,7 +50,7 @@ function convertDmdataIntensityToScale(maxInt) {
     "7": 70
   };
 
-  return list[maxInt] ?? 0;
+  return list[value] ?? 0;
 }
 
 function getEventId(telegram, earthquake) {
@@ -67,13 +77,17 @@ function getScaleList() {
   };
 }
 
-function getCoordinateValue(value) {
+function getNumberValue(value) {
   if (
     value === null ||
     value === undefined ||
     value === ""
   ) {
     return null;
+  }
+
+  if (typeof value === "object") {
+    return getNumberValue(value.value);
   }
 
   const number =
@@ -123,14 +137,10 @@ function parseDmdataEarthquake(telegram) {
       hypocenter?.depth?.value ?? "-",
 
     latitude:
-      getCoordinateValue(
-        coordinate?.latitude
-      ),
+      getNumberValue(coordinate?.latitude),
 
     longitude:
-      getCoordinateValue(
-        coordinate?.longitude
-      ),
+      getNumberValue(coordinate?.longitude),
 
     time:
       earthquake?.originTime ??
@@ -227,14 +237,10 @@ function parseVXSE52(telegram) {
       hypocenter?.depth?.value ?? "-",
 
     latitude:
-      getCoordinateValue(
-        coordinate?.latitude
-      ),
+      getNumberValue(coordinate?.latitude),
 
     longitude:
-      getCoordinateValue(
-        coordinate?.longitude
-      ),
+      getNumberValue(coordinate?.longitude),
 
     time:
       earthquake?.originTime ??
@@ -250,8 +256,83 @@ function parseVXSE52(telegram) {
   };
 }
 
+function parseDmdataEew(telegram) {
+  const body =
+    normalizeBody(telegram.body);
+
+  const earthquake =
+    body?.earthquake;
+
+  const hypocenter =
+    earthquake?.hypocenter;
+
+  const coordinate =
+    hypocenter?.coordinate;
+
+  const intensity =
+    body?.intensity;
+
+  const maxInt =
+    intensity?.forecastMaxInt ??
+    intensity?.maxInt ??
+    body?.forecastMaxInt ??
+    body?.maxInt;
+
+  const isWarning =
+    telegram.head?.type === "VXSE43" ||
+    body?.warning === true ||
+    body?.isWarning === true;
+
+  return {
+    eventId:
+      getEventId(telegram, earthquake),
+
+    type:
+      telegram.head?.type,
+
+    isWarning,
+
+    reportNumber:
+      telegram.head?.serial ??
+      body?.serial ??
+      body?.serialNo ??
+      null,
+
+    place:
+      hypocenter?.name ?? "震源調査中",
+
+    scale:
+      convertDmdataIntensityToScale(maxInt),
+
+    intensity:
+      convertDmdataIntensityText(maxInt),
+
+    magnitude:
+      hypocenter?.magnitude?.value ?? "-",
+
+    depth:
+      hypocenter?.depth?.value ?? "-",
+
+    latitude:
+      getNumberValue(coordinate?.latitude),
+
+    longitude:
+      getNumberValue(coordinate?.longitude),
+
+    time:
+      earthquake?.originTime ??
+      earthquake?.arrivalTime ??
+      telegram.head?.time ??
+      new Date().toISOString(),
+
+    raw:
+      telegram
+  };
+}
+
 module.exports = {
   parseDmdataEarthquake,
   parseVXSE51,
-  parseVXSE52
+  parseVXSE52,
+  parseDmdataEew
 };
