@@ -389,9 +389,7 @@ function parseDmdataEew(telegram) {
     body?.maxInt;
 
   const isWarning =
-    telegram.head?.type === "VXSE43" ||
-    body?.isWarning === true ||
-    body?.warning === true;
+    body?.isWarning === true;
 
   return {
     eventId:
