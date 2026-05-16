@@ -9,6 +9,7 @@ import {
 
 let svgRoot = null;
 let mapLayer = null;
+let intensityLayer = null;
 let hypocenterLayer = null;
 let mapBounds = null;
 
@@ -21,6 +22,18 @@ let viewBox = {
 
 let isDragging = false;
 let dragStart = null;
+
+const intensityColors = {
+  10: "#01aff9",
+  20: "#86d97f",
+  30: "#f5e904",
+  40: "#f8b304",
+  45: "#f93904",
+  50: "#f50404",
+  55: "#c50886",
+  60: "#9e07cb",
+  70: "#420092"
+};
 
 export function initializeSvgMap() {
   const mapArea =
@@ -39,7 +52,10 @@ export function initializeSvgMap() {
       "svg"
     );
 
-  svgRoot.setAttribute("id", "japan-svg-map");
+  svgRoot.setAttribute(
+    "id",
+    "japan-svg-map"
+  );
 
   svgRoot.setAttribute(
     "viewBox",
@@ -79,7 +95,7 @@ export function initializeSvgMap() {
     calculateProjectedBounds();
 
   buildMapLayer();
-
+  buildIntensityLayer();
   buildHypocenterLayer();
 
   setupSvgInteractions();
@@ -190,6 +206,18 @@ function fitProjectedPoint(point) {
   };
 }
 
+function projectAndFit(lat, lng) {
+  const projected =
+    projectLatLng(
+      lat,
+      lng
+    );
+
+  return fitProjectedPoint(
+    projected
+  );
+}
+
 function buildMapLayer() {
   mapLayer =
     document.createElementNS(
@@ -295,14 +323,11 @@ function createPolygonPathData(
 
   polygonCoordinates.forEach(ring => {
     ring.forEach((coord, index) => {
-      const projected =
-        projectLatLng(
+      const fitted =
+        projectAndFit(
           coord[1],
           coord[0]
         );
-
-      const fitted =
-        fitProjectedPoint(projected);
 
       if (index === 0) {
         pathData +=
@@ -321,6 +346,23 @@ function createPolygonPathData(
   return pathData;
 }
 
+function buildIntensityLayer() {
+  intensityLayer =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g"
+    );
+
+  intensityLayer.setAttribute(
+    "id",
+    "intensity-layer"
+  );
+
+  svgRoot.appendChild(
+    intensityLayer
+  );
+}
+
 function buildHypocenterLayer() {
   hypocenterLayer =
     document.createElementNS(
@@ -336,6 +378,114 @@ function buildHypocenterLayer() {
   svgRoot.appendChild(
     hypocenterLayer
   );
+}
+
+export function updateSvgIntensityPoints(
+  points,
+  scaleList
+) {
+  if (!intensityLayer || !mapBounds) {
+    return;
+  }
+
+  intensityLayer.innerHTML =
+    "";
+
+  if (
+    !Array.isArray(points) ||
+    points.length === 0
+  ) {
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  points.forEach(point => {
+    const lat =
+      getPointLatitude(point);
+
+    const lng =
+      getPointLongitude(point);
+
+    if (
+      lat === null ||
+      lng === null
+    ) {
+      return;
+    }
+
+    const scale =
+      getPointScale(point);
+
+    const fitted =
+      projectAndFit(
+        lat,
+        lng
+      );
+
+    const circle =
+      document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
+
+    circle.setAttribute(
+      "cx",
+      fitted.x
+    );
+
+    circle.setAttribute(
+      "cy",
+      fitted.y
+    );
+
+    circle.setAttribute(
+      "r",
+      getPointRadius(scale)
+    );
+
+    circle.setAttribute(
+      "fill",
+      getIntensityColor(scale)
+    );
+
+    circle.setAttribute(
+      "stroke",
+      "#ffffff"
+    );
+
+    circle.setAttribute(
+      "stroke-width",
+      "0.7"
+    );
+
+    circle.setAttribute(
+      "vector-effect",
+      "non-scaling-stroke"
+    );
+
+    const title =
+      document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "title"
+      );
+
+    const intensityText =
+      scaleList?.[scale] ??
+      point.intensity ??
+      point.maxInt ??
+      "-";
+
+    title.textContent =
+      `${point.name ?? point.addr ?? "観測点"} 震度 ${intensityText}`;
+
+    circle.appendChild(title);
+
+    fragment.appendChild(circle);
+  });
+
+  intensityLayer.appendChild(fragment);
 }
 
 export function updateSvgHypocenter(
@@ -362,14 +512,11 @@ export function updateSvgHypocenter(
     return;
   }
 
-  const projected =
-    projectLatLng(
+  const fitted =
+    projectAndFit(
       lat,
       lng
     );
-
-  const fitted =
-    fitProjectedPoint(projected);
 
   const cross =
     document.createElementNS(
@@ -433,6 +580,109 @@ export function updateSvgHypocenter(
   hypocenterLayer.appendChild(
     cross
   );
+}
+
+function getPointLatitude(point) {
+  return getNumberValue(
+    point.latitude ??
+    point.lat ??
+    point.coordinate?.latitude ??
+    point.position?.lat
+  );
+}
+
+function getPointLongitude(point) {
+  return getNumberValue(
+    point.longitude ??
+    point.lng ??
+    point.lon ??
+    point.coordinate?.longitude ??
+    point.position?.lng
+  );
+}
+
+function getPointScale(point) {
+  return (
+    point.scale ??
+    convertIntensityToScale(
+      point.intensity ??
+      point.maxInt
+    )
+  );
+}
+
+function getNumberValue(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
+
+  if (typeof value === "object") {
+    return getNumberValue(
+      value.value
+    );
+  }
+
+  const number =
+    Number(value);
+
+  return Number.isNaN(number)
+    ? null
+    : number;
+}
+
+function convertIntensityToScale(value) {
+  const list = {
+    "1": 10,
+    "2": 20,
+    "3": 30,
+    "4": 40,
+    "5-": 45,
+    "5弱": 45,
+    "5+": 50,
+    "5強": 50,
+    "6-": 55,
+    "6弱": 55,
+    "6+": 60,
+    "6強": 60,
+    "7": 70
+  };
+
+  return list[value] ?? 0;
+}
+
+function getIntensityColor(scale) {
+  return (
+    intensityColors[scale] ??
+    "#4b5563"
+  );
+}
+
+function getPointRadius(scale) {
+  if (scale >= 60) {
+    return 6.5;
+  }
+
+  if (scale >= 50) {
+    return 5.8;
+  }
+
+  if (scale >= 45) {
+    return 5.2;
+  }
+
+  if (scale >= 40) {
+    return 4.6;
+  }
+
+  if (scale >= 30) {
+    return 4;
+  }
+
+  return 3.5;
 }
 
 function updateViewBox() {

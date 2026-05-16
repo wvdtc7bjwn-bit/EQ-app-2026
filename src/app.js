@@ -18,7 +18,8 @@ import {
 
 import {
   initializeSvgMap,
-  updateSvgHypocenter
+  updateSvgHypocenter,
+  updateSvgIntensityPoints
 } from "./map/japanSvgMap.js";
 
 initializeSvgMap();
@@ -35,6 +36,11 @@ socket.on("earthquake", (data) => {
   updateTime();
 
   updatePoints(
+    data.points,
+    data.scaleList
+  );
+
+  updateSvgIntensityPoints(
     data.points,
     data.scaleList
   );
