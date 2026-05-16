@@ -1,11 +1,12 @@
 import fs from "fs";
 import path from "path";
+import { topology } from "topojson-server";
 
 const inputPath =
-  "./local-data/earthquakeArea_light.geojson";
+  "../local-data/earthquakeArea.geojson";
 
 const outputPath =
-  "./src/map/data/japanGeoJson.js";
+  "../public/mapdata/earthquakeAreas.topo.json";
 
 const raw =
   fs.readFileSync(inputPath, "utf-8");
@@ -13,51 +14,52 @@ const raw =
 const geojson =
   JSON.parse(raw);
 
-let features = [];
+let featureCollection = null;
 
 if (geojson.type === "FeatureCollection") {
-  features =
-    geojson.features;
+  featureCollection =
+    geojson;
 }
-
 else if (geojson.type === "GeometryCollection") {
-  features =
-    geojson.geometries.map((geometry, index) => {
-      return {
+  featureCollection = {
+    type: "FeatureCollection",
+    features:
+      geojson.geometries.map((geometry, index) => ({
         type: "Feature",
         properties: {
           id: index
         },
         geometry
-      };
-    });
+      }))
+  };
 }
-
 else if (
   geojson.type === "Polygon" ||
   geojson.type === "MultiPolygon"
 ) {
-  features = [
-    {
-      type: "Feature",
-      properties: {
-        id: 0
-      },
-      geometry: geojson
-    }
-  ];
+  featureCollection = {
+    type: "FeatureCollection",
+    features: [
+      {
+        type: "Feature",
+        properties: {
+          id: 0
+        },
+        geometry: geojson
+      }
+    ]
+  };
 }
-
 else {
   throw new Error(
     `未対応のGeoJSON形式です: ${geojson.type}`
   );
 }
 
-const outputGeoJson = {
-  type: "FeatureCollection",
-  features
-};
+const topo =
+  topology({
+    earthquakeAreas: featureCollection
+  });
 
 const outputDir =
   path.dirname(outputPath);
@@ -68,15 +70,12 @@ if (!fs.existsSync(outputDir)) {
   });
 }
 
-const fileText =
-  `export const japanGeoJson = ${JSON.stringify(outputGeoJson)};\n`;
-
 fs.writeFileSync(
   outputPath,
-  fileText,
+  JSON.stringify(topo),
   "utf-8"
 );
 
-console.log("japanGeoJson.js を作成しました");
+console.log("TopoJSONを作成しました");
 console.log(`出力先: ${outputPath}`);
-console.log(`features: ${features.length}`);
+console.log(`features: ${featureCollection.features.length}`);

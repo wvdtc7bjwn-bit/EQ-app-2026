@@ -8,8 +8,10 @@ import {
 } from "./projection.js";
 
 let svgRoot = null;
+let mapLayer = null;
 let hypocenterLayer = null;
 let mapBounds = null;
+
 let viewBox = {
   x: 0,
   y: 0,
@@ -38,35 +40,51 @@ export function initializeSvgMap() {
     );
 
   svgRoot.setAttribute("id", "japan-svg-map");
+
   svgRoot.setAttribute(
     "viewBox",
     `0 0 ${svgMapConfig.width} ${svgMapConfig.height}`
   );
 
-  svgRoot.style.position = "absolute";
-  svgRoot.style.top = "0";
-  svgRoot.style.left = "0";
-  svgRoot.style.width = "100%";
-  svgRoot.style.height = "100%";
-  svgRoot.style.pointerEvents = "auto";
-  svgRoot.style.cursor = "grab";
-  svgRoot.style.zIndex = "500";
+  svgRoot.style.position =
+    "absolute";
+
+  svgRoot.style.top =
+    "0";
+
+  svgRoot.style.left =
+    "0";
+
+  svgRoot.style.width =
+    "100%";
+
+  svgRoot.style.height =
+    "100%";
+
+  svgRoot.style.zIndex =
+    "500";
+
+  svgRoot.style.cursor =
+    "grab";
+
+  svgRoot.style.background =
+    "#07111d";
+
+  svgRoot.style.pointerEvents =
+    "auto";
 
   mapArea.appendChild(svgRoot);
 
+  mapBounds =
+    calculateProjectedBounds();
+
+  buildMapLayer();
+
+  buildHypocenterLayer();
+
   setupSvgInteractions();
 
-  mapBounds = calculateProjectedBounds();
-
-  drawGeoJsonMap();
-
-  hypocenterLayer =
-    document.createElementNS(
-      "http://www.w3.org/2000/svg",
-      "g"
-    );
-
-  svgRoot.appendChild(hypocenterLayer);
+  updateViewBox();
 }
 
 function calculateProjectedBounds() {
@@ -76,9 +94,12 @@ function calculateProjectedBounds() {
   let maxY = -Infinity;
 
   japanGeoJson.features.forEach(feature => {
-    const geometry = feature.geometry;
+    const geometry =
+      feature.geometry;
 
-    if (!geometry) return;
+    if (!geometry) {
+      return;
+    }
 
     const polygons =
       geometry.type === "Polygon"
@@ -88,16 +109,35 @@ function calculateProjectedBounds() {
     polygons.forEach(polygon => {
       polygon.forEach(ring => {
         ring.forEach(coord => {
-          const lng = coord[0];
-          const lat = coord[1];
+          const projected =
+            projectLatLng(
+              coord[1],
+              coord[0]
+            );
 
-          const p =
-            projectLatLng(lat, lng);
+          minX =
+            Math.min(
+              minX,
+              projected.x
+            );
 
-          minX = Math.min(minX, p.x);
-          minY = Math.min(minY, p.y);
-          maxX = Math.max(maxX, p.x);
-          maxY = Math.max(maxY, p.y);
+          minY =
+            Math.min(
+              minY,
+              projected.y
+            );
+
+          maxX =
+            Math.max(
+              maxX,
+              projected.x
+            );
+
+          maxY =
+            Math.max(
+              maxY,
+              projected.y
+            );
         });
       });
     });
@@ -111,115 +151,225 @@ function calculateProjectedBounds() {
   };
 }
 
-function fitPoint(point) {
-  const padding = 40;
+function fitProjectedPoint(point) {
+  const padding =
+    40;
 
   const width =
-    svgMapConfig.width - padding * 2;
+    svgMapConfig.width -
+    padding * 2;
 
   const height =
-    svgMapConfig.height - padding * 2;
+    svgMapConfig.height -
+    padding * 2;
 
   const scaleX =
-    width / (mapBounds.maxX - mapBounds.minX);
+    width /
+    (mapBounds.maxX - mapBounds.minX);
 
   const scaleY =
-    height / (mapBounds.maxY - mapBounds.minY);
+    height /
+    (mapBounds.maxY - mapBounds.minY);
 
   const scale =
-    Math.min(scaleX, scaleY);
+    Math.min(
+      scaleX,
+      scaleY
+    );
 
   return {
     x:
       padding +
-      (point.x - mapBounds.minX) * scale,
+      (point.x - mapBounds.minX) *
+        scale,
 
     y:
       padding +
-      (point.y - mapBounds.minY) * scale
+      (point.y - mapBounds.minY) *
+        scale
   };
 }
 
-function drawGeoJsonMap() {
-  const group =
+function buildMapLayer() {
+  mapLayer =
     document.createElementNS(
       "http://www.w3.org/2000/svg",
       "g"
     );
 
-  group.setAttribute("id", "geojson-layer");
+  mapLayer.setAttribute(
+    "id",
+    "geojson-layer"
+  );
+
+  const fragment =
+    document.createDocumentFragment();
 
   japanGeoJson.features.forEach(feature => {
-    const geometry =
-      feature.geometry;
+    const path =
+      createFeaturePath(feature);
 
-    if (!geometry) return;
-
-    if (geometry.type === "Polygon") {
-      drawPolygon(group, geometry.coordinates);
-    }
-
-    if (geometry.type === "MultiPolygon") {
-      geometry.coordinates.forEach(polygon => {
-        drawPolygon(group, polygon);
-      });
+    if (path) {
+      fragment.appendChild(path);
     }
   });
 
-  svgRoot.appendChild(group);
+  mapLayer.appendChild(fragment);
+
+  svgRoot.appendChild(mapLayer);
 }
 
-function drawPolygon(group, polygonCoordinates) {
+function createFeaturePath(feature) {
+  const geometry =
+    feature.geometry;
+
+  if (!geometry) {
+    return null;
+  }
+
+  let pathData = "";
+
+  if (geometry.type === "Polygon") {
+    pathData +=
+      createPolygonPathData(
+        geometry.coordinates
+      );
+  }
+
+  else if (geometry.type === "MultiPolygon") {
+    geometry.coordinates.forEach(polygon => {
+      pathData +=
+        createPolygonPathData(
+          polygon
+        );
+    });
+  }
+
+  if (!pathData) {
+    return null;
+  }
+
+  const path =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+
+  path.setAttribute(
+    "d",
+    pathData
+  );
+
+  path.setAttribute(
+    "fill",
+    "#1f2f25"
+  );
+
+  path.setAttribute(
+    "stroke",
+    "#dce6ff"
+  );
+
+  path.setAttribute(
+    "stroke-width",
+    "0.45"
+  );
+
+  path.setAttribute(
+    "vector-effect",
+    "non-scaling-stroke"
+  );
+
+  path.setAttribute(
+    "shape-rendering",
+    "geometricPrecision"
+  );
+
+  return path;
+}
+
+function createPolygonPathData(
+  polygonCoordinates
+) {
+  let pathData = "";
+
   polygonCoordinates.forEach(ring => {
-    let pathData = "";
-
     ring.forEach((coord, index) => {
-      const lng = coord[0];
-      const lat = coord[1];
-
       const projected =
-        projectLatLng(lat, lng);
+        projectLatLng(
+          coord[1],
+          coord[0]
+        );
 
       const fitted =
-        fitPoint(projected);
+        fitProjectedPoint(projected);
 
       if (index === 0) {
-        pathData += `M ${fitted.x} ${fitted.y}`;
+        pathData +=
+          `M ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
       }
+
       else {
-        pathData += ` L ${fitted.x} ${fitted.y}`;
+        pathData +=
+          ` L ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
       }
     });
 
-    pathData += " Z";
-
-    const path =
-      document.createElementNS(
-        "http://www.w3.org/2000/svg",
-        "path"
-      );
-
-    path.setAttribute("d", pathData);
-    path.setAttribute("fill", "#233225");
-    path.setAttribute("stroke", "#dce6ff");
-    path.setAttribute("stroke-width", "0.8");
-
-    group.appendChild(path);
+    pathData += " Z ";
   });
+
+  return pathData;
 }
 
-export function updateSvgHypocenter(lat, lng) {
-  if (!svgRoot || !mapBounds) {
+function buildHypocenterLayer() {
+  hypocenterLayer =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g"
+    );
+
+  hypocenterLayer.setAttribute(
+    "id",
+    "hypocenter-layer"
+  );
+
+  svgRoot.appendChild(
+    hypocenterLayer
+  );
+}
+
+export function updateSvgHypocenter(
+  lat,
+  lng
+) {
+  if (
+    !svgRoot ||
+    !mapBounds ||
+    !hypocenterLayer
+  ) {
     return;
   }
 
-  hypocenterLayer.innerHTML = "";
+  hypocenterLayer.innerHTML =
+    "";
+
+  if (
+    lat === null ||
+    lat === undefined ||
+    lng === null ||
+    lng === undefined
+  ) {
+    return;
+  }
 
   const projected =
-    projectLatLng(lat, lng);
+    projectLatLng(
+      lat,
+      lng
+    );
 
   const fitted =
-    fitPoint(projected);
+    fitProjectedPoint(projected);
 
   const cross =
     document.createElementNS(
@@ -227,22 +377,69 @@ export function updateSvgHypocenter(lat, lng) {
       "text"
     );
 
-  cross.setAttribute("x", fitted.x);
-  cross.setAttribute("y", fitted.y);
-  cross.setAttribute("fill", "#ff3b3b");
-  cross.setAttribute("stroke", "white");
-  cross.setAttribute("stroke-width", "2");
-  cross.setAttribute("font-size", "48");
-  cross.setAttribute("font-weight", "900");
-  cross.setAttribute("text-anchor", "middle");
-  cross.setAttribute("dominant-baseline", "middle");
+  cross.setAttribute(
+    "x",
+    fitted.x
+  );
 
-  cross.textContent = "×";
+  cross.setAttribute(
+    "y",
+    fitted.y
+  );
 
-  hypocenterLayer.appendChild(cross);
+  cross.setAttribute(
+    "fill",
+    "#ff3333"
+  );
+
+  cross.setAttribute(
+    "stroke",
+    "white"
+  );
+
+  cross.setAttribute(
+    "stroke-width",
+    "2"
+  );
+
+  cross.setAttribute(
+    "font-size",
+    "48"
+  );
+
+  cross.setAttribute(
+    "font-weight",
+    "900"
+  );
+
+  cross.setAttribute(
+    "text-anchor",
+    "middle"
+  );
+
+  cross.setAttribute(
+    "dominant-baseline",
+    "middle"
+  );
+
+  cross.setAttribute(
+    "vector-effect",
+    "non-scaling-stroke"
+  );
+
+  cross.textContent =
+    "×";
+
+  hypocenterLayer.appendChild(
+    cross
+  );
 }
 
 function updateViewBox() {
+  if (!svgRoot) {
+    return;
+  }
+
   svgRoot.setAttribute(
     "viewBox",
     `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`
@@ -250,87 +447,146 @@ function updateViewBox() {
 }
 
 function setupSvgInteractions() {
-  updateViewBox();
+  svgRoot.addEventListener(
+    "wheel",
+    event => {
+      event.preventDefault();
 
-  svgRoot.addEventListener("wheel", (event) => {
-    event.preventDefault();
+      const zoomFactor =
+        event.deltaY < 0
+          ? 0.88
+          : 1.14;
 
-    const zoomFactor =
-      event.deltaY < 0 ? 0.9 : 1.1;
+      const rect =
+        svgRoot.getBoundingClientRect();
 
-    const rect =
-      svgRoot.getBoundingClientRect();
+      const mouseX =
+        viewBox.x +
+        ((event.clientX - rect.left) /
+          rect.width) *
+          viewBox.width;
 
-    const mouseX =
-      viewBox.x +
-      (event.clientX - rect.left) / rect.width * viewBox.width;
+      const mouseY =
+        viewBox.y +
+        ((event.clientY - rect.top) /
+          rect.height) *
+          viewBox.height;
 
-    const mouseY =
-      viewBox.y +
-      (event.clientY - rect.top) / rect.height * viewBox.height;
+      const newWidth =
+        Math.max(
+          svgMapConfig.width / 12,
+          Math.min(
+            svgMapConfig.width * 1.6,
+            viewBox.width *
+              zoomFactor
+          )
+        );
 
-    const newWidth =
-      viewBox.width * zoomFactor;
+      const newHeight =
+        Math.max(
+          svgMapConfig.height / 12,
+          Math.min(
+            svgMapConfig.height * 1.6,
+            viewBox.height *
+              zoomFactor
+          )
+        );
 
-    const newHeight =
-      viewBox.height * zoomFactor;
+      const scaleX =
+        newWidth /
+        viewBox.width;
 
-    viewBox.x =
-      mouseX - (mouseX - viewBox.x) * zoomFactor;
+      const scaleY =
+        newHeight /
+        viewBox.height;
 
-    viewBox.y =
-      mouseY - (mouseY - viewBox.y) * zoomFactor;
+      viewBox.x =
+        mouseX -
+        (mouseX - viewBox.x) *
+          scaleX;
 
-    viewBox.width =
-      newWidth;
+      viewBox.y =
+        mouseY -
+        (mouseY - viewBox.y) *
+          scaleY;
 
-    viewBox.height =
-      newHeight;
+      viewBox.width =
+        newWidth;
 
-    updateViewBox();
-  });
+      viewBox.height =
+        newHeight;
 
-  svgRoot.addEventListener("mousedown", (event) => {
-    isDragging = true;
-
-    svgRoot.style.cursor =
-      "grabbing";
-
-    dragStart = {
-      x: event.clientX,
-      y: event.clientY,
-      viewBoxX: viewBox.x,
-      viewBoxY: viewBox.y
-    };
-  });
-
-  window.addEventListener("mousemove", (event) => {
-    if (!isDragging || !dragStart) {
-      return;
+      updateViewBox();
     }
+  );
 
-    const rect =
-      svgRoot.getBoundingClientRect();
+  svgRoot.addEventListener(
+    "mousedown",
+    event => {
+      isDragging =
+        true;
 
-    const dx =
-      (event.clientX - dragStart.x) / rect.width * viewBox.width;
+      svgRoot.style.cursor =
+        "grabbing";
 
-    const dy =
-      (event.clientY - dragStart.y) / rect.height * viewBox.height;
+      dragStart = {
+        x: event.clientX,
+        y: event.clientY,
+        viewBoxX:
+          viewBox.x,
+        viewBoxY:
+          viewBox.y
+      };
+    }
+  );
 
-    viewBox.x =
-      dragStart.viewBoxX - dx;
+  window.addEventListener(
+    "mousemove",
+    event => {
+      if (
+        !isDragging ||
+        !dragStart
+      ) {
+        return;
+      }
 
-    viewBox.y =
-      dragStart.viewBoxY - dy;
+      const rect =
+        svgRoot.getBoundingClientRect();
 
-    updateViewBox();
-  });
+      const dx =
+        ((event.clientX -
+          dragStart.x) /
+          rect.width) *
+        viewBox.width;
 
-  window.addEventListener("mouseup", () => {
-    isDragging = false;
+      const dy =
+        ((event.clientY -
+          dragStart.y) /
+          rect.height) *
+        viewBox.height;
 
-    svgRoot.style.cursor =
-      "grab";
-  });
+      viewBox.x =
+        dragStart.viewBoxX -
+        dx;
+
+      viewBox.y =
+        dragStart.viewBoxY -
+        dy;
+
+      updateViewBox();
+    }
+  );
+
+  window.addEventListener(
+    "mouseup",
+    () => {
+      isDragging =
+        false;
+
+      if (svgRoot) {
+        svgRoot.style.cursor =
+          "grab";
+      }
+    }
+  );
 }
