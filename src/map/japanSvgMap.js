@@ -8,7 +8,7 @@ import {
 } from "./projection.js";
 
 import {
-  getDistanceFromTravelTime
+  getWaveDistancesByJma2001
 } from "./travelTime.js";
 
 let svgRoot = null;
@@ -878,16 +878,10 @@ export function updateSvgEewWaves(
   }
 
   activeEewWave = {
-    latitude:
-      data.latitude,
-
-    longitude:
-      data.longitude,
-
-    originTime:
-      new Date(
-        data.time
-      ).getTime()
+    latitude: data.latitude,
+    longitude: data.longitude,
+    depthKm: Number(data.depth) || 10,
+    originTime: new Date(data.time).getTime()
   };
 
   if (eewAnimationId) {
@@ -925,17 +919,14 @@ function drawEewWaves() {
       activeEewWave.originTime
     ) / 1000;
 
-  const pDistanceKm =
-    getDistanceFromTravelTime(
-      "P",
-      elapsedSec
-    );
-
-  const sDistanceKm =
-    getDistanceFromTravelTime(
-      "S",
-      elapsedSec
-    );
+  const {
+    pDistanceKm,
+    sDistanceKm
+   } =
+  getWaveDistancesByJma2001(
+    activeEewWave.depthKm,
+    elapsedSec
+  );
 
   drawWaveCircle(
     activeEewWave.latitude,
