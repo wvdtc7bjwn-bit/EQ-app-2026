@@ -19,7 +19,8 @@ import {
 import {
   initializeSvgMap,
   updateSvgHypocenter,
-  updateSvgIntensityPoints
+  updateSvgIntensityPoints,
+  updateSvgEewWaves
 } from "./map/japanSvgMap.js";
 
 initializeSvgMap();
@@ -77,6 +78,7 @@ socket.on("eew", (data) => {
       data.latitude,
       data.longitude
     );
+    updateSvgEewWaves(data);
   }
 });
 

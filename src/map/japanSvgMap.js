@@ -7,11 +7,18 @@ import {
   svgMapConfig
 } from "./projection.js";
 
+import {
+  getDistanceFromTravelTime
+} from "./travelTime.js";
+
 let svgRoot = null;
 let mapLayer = null;
 let intensityLayer = null;
 let hypocenterLayer = null;
 let mapBounds = null;
+let eewWaveLayer = null;
+let activeEewWave = null;
+let eewAnimationId = null;
 
 let viewBox = {
   x: 0,
@@ -94,11 +101,12 @@ export function initializeSvgMap() {
   mapBounds =
     calculateProjectedBounds();
 
-  buildMapLayer();
-  buildIntensityLayer();
-  buildHypocenterLayer();
+buildMapLayer();
+buildEewWaveLayer();
+buildIntensityLayer();
+buildHypocenterLayer();
 
-  setupSvgInteractions();
+setupSvgInteractions();
 
   updateViewBox();
 }
@@ -344,6 +352,23 @@ function createPolygonPathData(
   });
 
   return pathData;
+}
+
+function buildEewWaveLayer() {
+  eewWaveLayer =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g"
+    );
+
+  eewWaveLayer.setAttribute(
+    "id",
+    "eew-wave-layer"
+  );
+
+  svgRoot.appendChild(
+    eewWaveLayer
+  );
 }
 
 function buildIntensityLayer() {
@@ -838,5 +863,207 @@ function setupSvgInteractions() {
           "grab";
       }
     }
+  );
+}
+
+export function updateSvgEewWaves(
+  data
+) {
+  if (
+    !data?.latitude ||
+    !data?.longitude ||
+    !data?.time
+  ) {
+    return;
+  }
+
+  activeEewWave = {
+    latitude:
+      data.latitude,
+
+    longitude:
+      data.longitude,
+
+    originTime:
+      new Date(
+        data.time
+      ).getTime()
+  };
+
+  if (eewAnimationId) {
+    cancelAnimationFrame(
+      eewAnimationId
+    );
+  }
+
+  animateEewWaves();
+}
+
+function animateEewWaves() {
+  drawEewWaves();
+
+  eewAnimationId =
+    requestAnimationFrame(
+      animateEewWaves
+    );
+}
+
+function drawEewWaves() {
+  if (
+    !activeEewWave ||
+    !eewWaveLayer
+  ) {
+    return;
+  }
+
+  eewWaveLayer.innerHTML =
+    "";
+
+  const elapsedSec =
+    (
+      Date.now() -
+      activeEewWave.originTime
+    ) / 1000;
+
+  const pDistanceKm =
+    getDistanceFromTravelTime(
+      "P",
+      elapsedSec
+    );
+
+  const sDistanceKm =
+    getDistanceFromTravelTime(
+      "S",
+      elapsedSec
+    );
+
+  drawWaveCircle(
+    activeEewWave.latitude,
+    activeEewWave.longitude,
+    pDistanceKm,
+    "#0022ff",
+    "P"
+  );
+
+  drawWaveCircle(
+    activeEewWave.latitude,
+    activeEewWave.longitude,
+    sDistanceKm,
+    "#ff4000",
+    "S"
+  );
+}
+
+function drawWaveCircle(
+  lat,
+  lng,
+  distanceKm,
+  color,
+  label
+) {
+  const center =
+    projectAndFit(
+      lat,
+      lng
+    );
+
+  const edge =
+    projectAndFit(
+      lat +
+        distanceKm / 111,
+      lng
+    );
+
+  const radius =
+    Math.abs(
+      edge.y - center.y
+    );
+
+  const circle =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "circle"
+    );
+
+  circle.setAttribute(
+    "cx",
+    center.x
+  );
+
+  circle.setAttribute(
+    "cy",
+    center.y
+  );
+
+  circle.setAttribute(
+    "r",
+    radius
+  );
+
+  circle.setAttribute(
+    "fill",
+    "none"
+  );
+
+  circle.setAttribute(
+    "stroke",
+    color
+  );
+
+  circle.setAttribute(
+    "stroke-width",
+    "2"
+  );
+
+  circle.setAttribute(
+    "opacity",
+    "0.85"
+  );
+
+  circle.setAttribute(
+    "vector-effect",
+    "non-scaling-stroke"
+  );
+
+  eewWaveLayer.appendChild(
+    circle
+  );
+
+  const text =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+
+  text.setAttribute(
+    "x",
+    center.x + radius + 6
+  );
+
+  text.setAttribute(
+    "y",
+    center.y
+  );
+
+  text.setAttribute(
+    "fill",
+    color
+  );
+
+  text.setAttribute(
+    "font-size",
+    "16"
+  );
+
+  text.setAttribute(
+    "font-weight",
+    "bold"
+  );
+
+  text.textContent =
+    label;
+
+  eewWaveLayer.appendChild(
+    text
   );
 }
