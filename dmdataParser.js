@@ -11,11 +11,23 @@ function normalizeBody(body) {
   }
 }
 
+function getScaleList() {
+  return {
+    10: "1",
+    20: "2",
+    30: "3",
+    40: "4",
+    45: "5弱",
+    50: "5強",
+    55: "6弱",
+    60: "6強",
+    70: "7"
+  };
+}
+
 function convertDmdataIntensityText(maxInt) {
   const value =
-    typeof maxInt === "object"
-      ? maxInt?.value ?? maxInt?.from ?? maxInt?.to
-      : maxInt;
+    getIntensityValue(maxInt);
 
   const list = {
     "1": "1",
@@ -34,9 +46,7 @@ function convertDmdataIntensityText(maxInt) {
 
 function convertDmdataIntensityToScale(maxInt) {
   const value =
-    typeof maxInt === "object"
-      ? maxInt?.value ?? maxInt?.from ?? maxInt?.to
-      : maxInt;
+    getIntensityValue(maxInt);
 
   const list = {
     "1": 10,
@@ -53,28 +63,26 @@ function convertDmdataIntensityToScale(maxInt) {
   return list[value] ?? 0;
 }
 
-function getEventId(telegram, earthquake) {
-  return (
-    earthquake?.eventId ??
-    telegram.head?.eventId ??
-    telegram.head?.serial ??
-    telegram.head?.time ??
-    new Date().toISOString()
-  );
-}
+function getIntensityValue(value) {
+  if (
+    value === null ||
+    value === undefined ||
+    value === ""
+  ) {
+    return null;
+  }
 
-function getScaleList() {
-  return {
-    10: "1",
-    20: "2",
-    30: "3",
-    40: "4",
-    45: "5弱",
-    50: "5強",
-    55: "6弱",
-    60: "6強",
-    70: "7"
-  };
+  if (typeof value === "object") {
+    return (
+      value.value ??
+      value.from ??
+      value.to ??
+      value.max ??
+      null
+    );
+  }
+
+  return value;
 }
 
 function getNumberValue(value) {
@@ -87,7 +95,11 @@ function getNumberValue(value) {
   }
 
   if (typeof value === "object") {
-    return getNumberValue(value.value);
+    return getNumberValue(
+      value.value ??
+      value.latitude ??
+      value.longitude
+    );
   }
 
   const number =
@@ -96,6 +108,93 @@ function getNumberValue(value) {
   return Number.isNaN(number)
     ? null
     : number;
+}
+
+function getEventId(telegram, earthquake) {
+  return (
+    earthquake?.eventId ??
+    telegram.head?.eventId ??
+    telegram.head?.serial ??
+    telegram.head?.time ??
+    new Date().toISOString()
+  );
+}
+
+function normalizeStationPoint(station) {
+  const coordinate =
+    station?.coordinate ??
+    station?.point?.coordinate ??
+    station?.location?.coordinate ??
+    station?.position ??
+    null;
+
+  const latitude =
+    getNumberValue(
+      station?.latitude ??
+      station?.lat ??
+      coordinate?.latitude ??
+      coordinate?.lat
+    );
+
+  const longitude =
+    getNumberValue(
+      station?.longitude ??
+      station?.lng ??
+      station?.lon ??
+      coordinate?.longitude ??
+      coordinate?.lng ??
+      coordinate?.lon
+    );
+
+  const rawIntensity =
+    station?.intensity ??
+    station?.maxInt ??
+    station?.scale ??
+    station?.kind?.code ??
+    null;
+
+  const scale =
+    typeof rawIntensity === "number"
+      ? rawIntensity
+      : convertDmdataIntensityToScale(rawIntensity);
+
+  return {
+    code:
+      station?.code ?? null,
+
+    name:
+      station?.name ??
+      station?.addr ??
+      station?.address ??
+      "観測点",
+
+    latitude,
+
+    longitude,
+
+    scale,
+
+    intensity:
+      convertDmdataIntensityText(rawIntensity),
+
+    raw:
+      station
+  };
+}
+
+function normalizeStations(intensity) {
+  const stations =
+    intensity?.stations ??
+    intensity?.points ??
+    [];
+
+  if (!Array.isArray(stations)) {
+    return [];
+  }
+
+  return stations.map(
+    normalizeStationPoint
+  );
 }
 
 function parseDmdataEarthquake(telegram) {
@@ -131,16 +230,22 @@ function parseDmdataEarthquake(telegram) {
       convertDmdataIntensityText(maxInt),
 
     magnitude:
-      hypocenter?.magnitude?.value ?? "-",
+      earthquake?.magnitude?.value ??
+      hypocenter?.magnitude?.value ??
+      "-",
 
     depth:
       hypocenter?.depth?.value ?? "-",
 
     latitude:
-      getNumberValue(coordinate?.latitude),
+      getNumberValue(
+        coordinate?.latitude
+      ),
 
     longitude:
-      getNumberValue(coordinate?.longitude),
+      getNumberValue(
+        coordinate?.longitude
+      ),
 
     time:
       earthquake?.originTime ??
@@ -149,7 +254,7 @@ function parseDmdataEarthquake(telegram) {
       new Date().toISOString(),
 
     points:
-      intensity?.stations ?? [],
+      normalizeStations(intensity),
 
     scaleList:
       getScaleList()
@@ -197,7 +302,7 @@ function parseVXSE51(telegram) {
       new Date().toISOString(),
 
     points:
-      [],
+      normalizeStations(intensity),
 
     scaleList:
       getScaleList()
@@ -231,16 +336,21 @@ function parseVXSE52(telegram) {
       "-",
 
     magnitude:
-      hypocenter?.magnitude?.value ?? "-",
+      earthquake?.magnitude?.value ??
+      "-",
 
     depth:
       hypocenter?.depth?.value ?? "-",
 
     latitude:
-      getNumberValue(coordinate?.latitude),
+      getNumberValue(
+        coordinate?.latitude
+      ),
 
     longitude:
-      getNumberValue(coordinate?.longitude),
+      getNumberValue(
+        coordinate?.longitude
+      ),
 
     time:
       earthquake?.originTime ??
@@ -280,8 +390,8 @@ function parseDmdataEew(telegram) {
 
   const isWarning =
     telegram.head?.type === "VXSE43" ||
-    body?.warning === true ||
-    body?.isWarning === true;
+    body?.isWarning === true ||
+    body?.warning === true;
 
   return {
     eventId:
@@ -308,25 +418,27 @@ function parseDmdataEew(telegram) {
       convertDmdataIntensityText(maxInt),
 
     magnitude:
-      hypocenter?.magnitude?.value ?? "-",
+      earthquake?.magnitude?.value ??
+      "-",
 
     depth:
       hypocenter?.depth?.value ?? "-",
 
     latitude:
-      getNumberValue(coordinate?.latitude),
+      getNumberValue(
+        coordinate?.latitude
+      ),
 
     longitude:
-      getNumberValue(coordinate?.longitude),
+      getNumberValue(
+        coordinate?.longitude
+      ),
 
     time:
       earthquake?.originTime ??
       earthquake?.arrivalTime ??
       telegram.head?.time ??
-      new Date().toISOString(),
-
-    raw:
-      telegram
+      new Date().toISOString()
   };
 }
 
