@@ -1,13 +1,35 @@
-function normalizeBody(body) {
+const zlib = require("zlib");
+
+function normalizeBody(body, telegram = {}) {
+  if (!body) {
+    return null;
+  }
+
   if (typeof body !== "string") {
     return body;
   }
 
   try {
+    if (
+      telegram.encoding === "base64" &&
+      telegram.compression === "gzip"
+    ) {
+      const buffer =
+        Buffer.from(body, "base64");
+
+      const decoded =
+        zlib.gunzipSync(buffer).toString("utf-8");
+
+      return JSON.parse(decoded);
+    }
+
     return JSON.parse(body);
   }
-  catch {
-    return body;
+  catch (error) {
+    console.log("body decode error:");
+    console.log(error.message);
+
+    return null;
   }
 }
 
@@ -38,7 +60,8 @@ function convertDmdataIntensityText(maxInt) {
     "5+": "5強",
     "6-": "6弱",
     "6+": "6強",
-    "7": "7"
+    "7": "7",
+    "不明": "-"
   };
 
   return list[value] ?? "-";
@@ -113,8 +136,8 @@ function getNumberValue(value) {
 function getEventId(telegram, earthquake) {
   return (
     earthquake?.eventId ??
+    telegram.xmlReport?.head?.eventId ??
     telegram.head?.eventId ??
-    telegram.head?.serial ??
     telegram.head?.time ??
     new Date().toISOString()
   );
@@ -126,6 +149,31 @@ function getLongPeriodIntensity(intensity) {
     intensity?.maxLongPeriodIntensity ??
     intensity?.maxLgIntensity ??
     intensity?.lgCategory ??
+    null
+  );
+}
+
+function getMagnitudeValue(earthquake, hypocenter) {
+  return (
+    earthquake?.magnitude?.value ??
+    earthquake?.magnitude?.jmaMagnitude ??
+    hypocenter?.magnitude?.value ??
+    "-"
+  );
+}
+
+function getDepthValue(hypocenter) {
+  return (
+    hypocenter?.depth?.value ??
+    hypocenter?.depth ??
+    "-"
+  );
+}
+
+function getHypocenterCoordinate(hypocenter) {
+  return (
+    hypocenter?.coordinate ??
+    hypocenter?.coordinates ??
     null
   );
 }
@@ -196,6 +244,7 @@ function normalizeStations(intensity) {
   const stations =
     intensity?.stations ??
     intensity?.points ??
+    intensity?.observation?.stations ??
     [];
 
   if (!Array.isArray(stations)) {
@@ -209,7 +258,7 @@ function normalizeStations(intensity) {
 
 function parseDmdataEarthquake(telegram) {
   const body =
-    normalizeBody(telegram.body);
+    normalizeBody(telegram.body, telegram);
 
   const earthquake =
     body?.earthquake;
@@ -218,7 +267,7 @@ function parseDmdataEarthquake(telegram) {
     earthquake?.hypocenter;
 
   const coordinate =
-    hypocenter?.coordinate;
+    getHypocenterCoordinate(hypocenter);
 
   const intensity =
     body?.intensity;
@@ -243,12 +292,10 @@ function parseDmdataEarthquake(telegram) {
       getLongPeriodIntensity(intensity),
 
     magnitude:
-      earthquake?.magnitude?.value ??
-      hypocenter?.magnitude?.value ??
-      "-",
+      getMagnitudeValue(earthquake, hypocenter),
 
     depth:
-      hypocenter?.depth?.value ?? "-",
+      getDepthValue(hypocenter),
 
     latitude:
       getNumberValue(
@@ -263,6 +310,7 @@ function parseDmdataEarthquake(telegram) {
     time:
       earthquake?.originTime ??
       earthquake?.arrivalTime ??
+      telegram.xmlReport?.head?.targetDateTime ??
       telegram.head?.time ??
       new Date().toISOString(),
 
@@ -276,7 +324,7 @@ function parseDmdataEarthquake(telegram) {
 
 function parseVXSE51(telegram) {
   const body =
-    normalizeBody(telegram.body);
+    normalizeBody(telegram.body, telegram);
 
   const intensity =
     body?.intensity;
@@ -314,6 +362,7 @@ function parseVXSE51(telegram) {
 
     time:
       body?.pressDateTime ??
+      telegram.xmlReport?.head?.targetDateTime ??
       telegram.head?.time ??
       new Date().toISOString(),
 
@@ -327,7 +376,7 @@ function parseVXSE51(telegram) {
 
 function parseVXSE52(telegram) {
   const body =
-    normalizeBody(telegram.body);
+    normalizeBody(telegram.body, telegram);
 
   const earthquake =
     body?.earthquake;
@@ -336,7 +385,7 @@ function parseVXSE52(telegram) {
     earthquake?.hypocenter;
 
   const coordinate =
-    hypocenter?.coordinate;
+    getHypocenterCoordinate(hypocenter);
 
   return {
     eventId:
@@ -355,11 +404,10 @@ function parseVXSE52(telegram) {
       null,
 
     magnitude:
-      earthquake?.magnitude?.value ??
-      "-",
+      getMagnitudeValue(earthquake, hypocenter),
 
     depth:
-      hypocenter?.depth?.value ?? "-",
+      getDepthValue(hypocenter),
 
     latitude:
       getNumberValue(
@@ -374,6 +422,7 @@ function parseVXSE52(telegram) {
     time:
       earthquake?.originTime ??
       earthquake?.arrivalTime ??
+      telegram.xmlReport?.head?.targetDateTime ??
       telegram.head?.time ??
       new Date().toISOString(),
 
@@ -387,7 +436,7 @@ function parseVXSE52(telegram) {
 
 function parseDmdataEew(telegram) {
   const body =
-    normalizeBody(telegram.body);
+    normalizeBody(telegram.body, telegram);
 
   const earthquake =
     body?.earthquake;
@@ -396,7 +445,7 @@ function parseDmdataEew(telegram) {
     earthquake?.hypocenter;
 
   const coordinate =
-    hypocenter?.coordinate;
+    getHypocenterCoordinate(hypocenter);
 
   const intensity =
     body?.intensity;
@@ -420,6 +469,7 @@ function parseDmdataEew(telegram) {
     isWarning,
 
     reportNumber:
+      telegram.xmlReport?.head?.serial ??
       telegram.head?.serial ??
       body?.serial ??
       body?.serialNo ??
@@ -438,11 +488,10 @@ function parseDmdataEew(telegram) {
       getLongPeriodIntensity(intensity),
 
     magnitude:
-      earthquake?.magnitude?.value ??
-      "-",
+      getMagnitudeValue(earthquake, hypocenter),
 
     depth:
-      hypocenter?.depth?.value ?? "-",
+      getDepthValue(hypocenter),
 
     latitude:
       getNumberValue(
@@ -457,6 +506,7 @@ function parseDmdataEew(telegram) {
     time:
       earthquake?.originTime ??
       earthquake?.arrivalTime ??
+      telegram.xmlReport?.head?.targetDateTime ??
       telegram.head?.time ??
       new Date().toISOString()
   };
