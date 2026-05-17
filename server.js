@@ -25,6 +25,10 @@ const server =
 const io =
   new Server(server);
 
+const {
+  startKyoshinMonitor
+} = require("./server/kyoshinService");
+
 app.use(
   express.static(__dirname)
 );
@@ -149,8 +153,11 @@ async function startDmdataSocket() {
   });
 }
 
+
 server.listen(3000, () => {
   console.log("サーバー起動 http://localhost:3000");
 
   startDmdataSocket();
+
+  startKyoshinMonitor(io);
 });

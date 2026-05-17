@@ -20,7 +20,8 @@ import {
   initializeSvgMap,
   updateSvgHypocenter,
   updateSvgIntensityPoints,
-  updateSvgEewWaves
+  updateSvgEewWaves,
+  updateKyoshinDots
 } from "./map/japanSvgMap.js";
 
 initializeSvgMap();
@@ -91,4 +92,13 @@ socket.on("eew", (data) => {
 socket.on("dmdata-telegram", (telegram) => {
   console.log("その他dmdata受信:");
   console.log(telegram);
+});
+
+socket.on("kyoshin", (data) => {
+  console.log("強震モニタ受信:");
+  console.log(data);
+
+  updateKyoshinDots(
+    data.points
+  );
 });

@@ -29,6 +29,7 @@ let viewBox = {
 
 let isDragging = false;
 let dragStart = null;
+let kyoshinLayer = null;
 
 const intensityColors = {
   10: "#01aff9",
@@ -105,6 +106,7 @@ buildMapLayer();
 buildEewWaveLayer();
 buildIntensityLayer();
 buildHypocenterLayer();
+buildKyoshinLayer();
 
 setupSvgInteractions();
 
@@ -368,6 +370,23 @@ function buildEewWaveLayer() {
 
   svgRoot.appendChild(
     eewWaveLayer
+  );
+}
+
+function buildKyoshinLayer() {
+  kyoshinLayer =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g"
+    );
+
+  kyoshinLayer.setAttribute(
+    "id",
+    "kyoshin-layer"
+  );
+
+  svgRoot.appendChild(
+    kyoshinLayer
   );
 }
 
@@ -1098,5 +1117,103 @@ function drawWaveCircle(
 
   eewWaveLayer.appendChild(
     text
+  );
+}
+
+export function updateKyoshinDots(points) {
+  if (
+    !kyoshinLayer ||
+    !mapBounds
+  ) {
+    return;
+  }
+
+  kyoshinLayer.innerHTML =
+    "";
+
+  if (
+    !Array.isArray(points) ||
+    points.length === 0
+  ) {
+    return;
+  }
+
+  const fragment =
+    document.createDocumentFragment();
+
+  points.forEach(point => {
+    if (
+      point.latitude === null ||
+      point.latitude === undefined ||
+      point.longitude === null ||
+      point.longitude === undefined ||
+      !point.color
+    ) {
+      return;
+    }
+
+    const fitted =
+      projectAndFit(
+        point.latitude,
+        point.longitude
+      );
+
+    const circle =
+      document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "circle"
+      );
+
+    circle.setAttribute(
+      "cx",
+      fitted.x
+    );
+
+    circle.setAttribute(
+      "cy",
+      fitted.y
+    );
+
+    circle.setAttribute(
+      "r",
+      "2.8"
+    );
+
+    circle.setAttribute(
+      "fill",
+      point.color
+    );
+
+    circle.setAttribute(
+      "stroke",
+      "rgba(255,255,255,0.65)"
+    );
+
+    circle.setAttribute(
+      "stroke-width",
+      "0.35"
+    );
+
+    circle.setAttribute(
+      "vector-effect",
+      "non-scaling-stroke"
+    );
+
+    const title =
+      document.createElementNS(
+        "http://www.w3.org/2000/svg",
+        "title"
+      );
+
+    title.textContent =
+      `${point.name ?? "観測点"} ${point.color}`;
+
+    circle.appendChild(title);
+
+    fragment.appendChild(circle);
+  });
+
+  kyoshinLayer.appendChild(
+    fragment
   );
 }
