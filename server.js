@@ -9,6 +9,10 @@ const {
   routeTelegram
 } = require("./dmdataRouter");
 
+const {
+  saveTelegramSample
+} = require("./tools/saveTelegramSample");
+
 const API_KEY =
   process.env.DMDATA_API_KEY;
 
@@ -27,24 +31,6 @@ app.use(
 
 io.on("connection", (socket) => {
   console.log("ブラウザ接続");
-
-  // 疑似EEWテスト用
-  // 本番ではこの setTimeout 全体を削除
-  setTimeout(() => {
-    socket.emit("dmdata-telegram", {
-      type: "VXSE45",
-      raw: {
-        head: {
-          serial: "02"
-        },
-        body: {
-          warning: true
-        }
-      }
-    });
-
-    console.log("疑似EEW送信");
-  }, 3000);
 });
 
 async function startDmdataSocket() {
@@ -60,7 +46,7 @@ async function startDmdataSocket() {
     await fetch("https://api.dmdata.jp/v2/socket", {
       method: "POST",
       headers: {
-        "Authorization": `Basic ${basic}`,
+        Authorization: `Basic ${basic}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -96,8 +82,17 @@ async function startDmdataSocket() {
   });
 
   ws.on("message", (message) => {
-    const data =
-      JSON.parse(message.toString());
+    let data;
+
+    try {
+      data =
+        JSON.parse(message.toString());
+    }
+    catch (error) {
+      console.log("dmdata JSON parse error:");
+      console.log(error);
+      return;
+    }
 
     if (data.type === "start") {
       console.log("dmdata WebSocket 開始");
@@ -111,10 +106,8 @@ async function startDmdataSocket() {
         type: "pong",
         pingId: data.pingId
       }));
-    
 
       console.log("pong送信:", data.pingId);
-
       return;
     }
 
@@ -123,6 +116,8 @@ async function startDmdataSocket() {
       console.log(data);
       return;
     }
+
+    saveTelegramSample(data);
 
     routeTelegram(data, io);
   });
