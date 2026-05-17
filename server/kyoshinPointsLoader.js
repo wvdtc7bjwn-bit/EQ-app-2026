@@ -70,7 +70,9 @@ function loadKyoshinStations() {
   const list =
     Array.isArray(json)
       ? json
-      : json.points ?? json.items ?? [];
+      : json.points ??
+        json.items ??
+        [];
 
   const points =
     list

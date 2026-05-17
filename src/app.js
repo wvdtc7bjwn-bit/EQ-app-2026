@@ -49,7 +49,12 @@ socket.on("earthquake", (data) => {
 
   addHistory(data);
 
-  if (data.latitude && data.longitude) {
+  if (
+    data.latitude !== null &&
+    data.latitude !== undefined &&
+    data.longitude !== null &&
+    data.longitude !== undefined
+  ) {
     updateSvgHypocenter(
       data.latitude,
       data.longitude
@@ -74,31 +79,41 @@ socket.on("eew", (data) => {
     data.reportNumber
   );
 
-  if (data.latitude && data.longitude) {
+  if (
+    data.latitude !== null &&
+    data.latitude !== undefined &&
+    data.longitude !== null &&
+    data.longitude !== undefined
+  ) {
     updateSvgHypocenter(
-     data.latitude,
-     data.longitude
-  );
+      data.latitude,
+      data.longitude
+    );
 
     updateSvgEewWaves(
-     data,
-     {
-      replay: data.isReplay === true
-     }
+      data,
+      {
+        replay:
+          data.isReplay === true
+      }
+    );
+  }
+});
+
+socket.on("kyoshin", (data) => {
+  console.log(
+    "強震モニタ受信:",
+    data.time,
+    data.imageSize,
+    data.points?.length
   );
- }
+
+  updateKyoshinDots(
+    data.points
+  );
 });
 
 socket.on("dmdata-telegram", (telegram) => {
   console.log("その他dmdata受信:");
   console.log(telegram);
-});
-
-socket.on("kyoshin", (data) => {
-  console.log("強震モニタ受信:");
-  console.log(data);
-
-  updateKyoshinDots(
-    data.points
-  );
 });

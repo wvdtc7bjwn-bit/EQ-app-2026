@@ -104,9 +104,9 @@ export function initializeSvgMap() {
 
 buildMapLayer();
 buildEewWaveLayer();
+buildKyoshinLayer();
 buildIntensityLayer();
 buildHypocenterLayer();
-buildKyoshinLayer();
 
 setupSvgInteractions();
 
@@ -1152,6 +1152,15 @@ export function updateKyoshinDots(points) {
       return;
     }
 
+    if (
+      Array.isArray(point.rgb) &&
+      point.rgb[0] < 8 &&
+      point.rgb[1] < 8 &&
+      point.rgb[2] < 8
+    ) {
+      return;
+    }
+
     const fitted =
       projectAndFit(
         point.latitude,
@@ -1176,7 +1185,7 @@ export function updateKyoshinDots(points) {
 
     circle.setAttribute(
       "r",
-      "2.8"
+      "1.4"
     );
 
     circle.setAttribute(
@@ -1186,18 +1195,16 @@ export function updateKyoshinDots(points) {
 
     circle.setAttribute(
       "stroke",
-      "rgba(255,255,255,0.65)"
-    );
-
-    circle.setAttribute(
-      "stroke-width",
-      "0.35"
+      "none"
     );
 
     circle.setAttribute(
       "vector-effect",
       "non-scaling-stroke"
     );
+
+    circle.style.pointerEvents =
+      "none";
 
     const title =
       document.createElementNS(

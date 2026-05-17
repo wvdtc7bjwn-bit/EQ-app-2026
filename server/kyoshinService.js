@@ -15,7 +15,7 @@ function formatJstDate(date) {
   const jst =
     new Date(
       date.getTime() +
-      9 * 60 * 60 * 1000
+        9 * 60 * 60 * 1000
     );
 
   const yyyy =
@@ -43,7 +43,8 @@ function formatJstDate(date) {
 
   return {
     ymd: `${yyyy}${mm}${dd}`,
-    ymdhms: `${yyyy}${mm}${dd}${hh}${mi}${ss}`
+    ymdhms:
+      `${yyyy}${mm}${dd}${hh}${mi}${ss}`
   };
 }
 
@@ -60,7 +61,11 @@ function buildKyoshinUrl(
   const layer =
     underground ? "b" : "s";
 
-  return `http://www.kmoni.bosai.go.jp/data/map_img/RealTimeImg/${dataType}_${layer}/${ymd}/${ymdhms}.${dataType}_${layer}.gif`;
+  return (
+    "http://www.kmoni.bosai.go.jp" +
+    `/data/map_img/RealTimeImg/${dataType}_${layer}` +
+    `/${ymd}/${ymdhms}.${dataType}_${layer}.gif`
+  );
 }
 
 async function fetchImageBuffer(url) {
@@ -87,7 +92,9 @@ async function fetchLatestImage() {
 
   for (let i = 0; i <= RETRY_SECONDS; i++) {
     const targetTime =
-      new Date(baseTime - i * 1000);
+      new Date(
+        baseTime - i * 1000
+      );
 
     const url =
       buildKyoshinUrl(
@@ -114,6 +121,33 @@ async function fetchLatestImage() {
   throw lastError;
 }
 
+function isInvalidColor(r, g, b, a) {
+  if (a === 0) {
+    return true;
+  }
+
+  // 黒背景・ほぼ黒を除外
+  if (
+    r < 8 &&
+    g < 8 &&
+    b < 8
+  ) {
+    return true;
+  }
+
+  // 完全白系ノイズを除外したい場合
+  // 地図境界線などを拾う場合の保険
+  if (
+    r > 248 &&
+    g > 248 &&
+    b > 248
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
 async function parseKyoshinImage(buffer) {
   const image =
     sharp(buffer, {
@@ -129,47 +163,83 @@ async function parseKyoshinImage(buffer) {
       .raw()
       .toBuffer();
 
-  return stations
-    .map(station => {
-      const x =
-        Math.round(station.pixelX);
+  const points =
+    stations
+      .map(station => {
+        const x =
+          Math.round(
+            station.pixelX
+          );
 
-      const y =
-        Math.round(station.pixelY);
+        const y =
+          Math.round(
+            station.pixelY
+          );
 
-      if (
-        x < 0 ||
-        y < 0 ||
-        x >= metadata.width ||
-        y >= metadata.height
-      ) {
-        return null;
-      }
+        if (
+          x < 0 ||
+          y < 0 ||
+          x >= metadata.width ||
+          y >= metadata.height
+        ) {
+          return null;
+        }
 
-      const index =
-        (y * metadata.width + x) * 4;
+        const index =
+          (
+            y * metadata.width +
+            x
+          ) * 4;
 
-      const r = raw[index];
-      const g = raw[index + 1];
-      const b = raw[index + 2];
-      const a = raw[index + 3];
+        const r = raw[index];
+        const g = raw[index + 1];
+        const b = raw[index + 2];
+        const a = raw[index + 3];
 
-      if (a === 0) {
-        return null;
-      }
+        if (
+          isInvalidColor(
+            r,
+            g,
+            b,
+            a
+          )
+        ) {
+          return null;
+        }
 
-      return {
-        code: station.code,
-        name: station.name,
-        latitude: station.lat,
-        longitude: station.lon,
-        color: `rgb(${r}, ${g}, ${b})`,
-        rgb: [r, g, b],
-        pixelX: x,
-        pixelY: y
-      };
-    })
-    .filter(Boolean);
+        return {
+          code:
+            station.code,
+
+          name:
+            station.name,
+
+          latitude:
+            station.lat,
+
+          longitude:
+            station.lon,
+
+          color:
+            `rgb(${r}, ${g}, ${b})`,
+
+          rgb:
+            [r, g, b],
+
+          pixelX:
+            x,
+
+          pixelY:
+            y
+        };
+      })
+      .filter(Boolean);
+
+  return {
+    width: metadata.width,
+    height: metadata.height,
+    points
+  };
 }
 
 async function updateKyoshin(io) {
@@ -184,7 +254,7 @@ async function updateKyoshin(io) {
       targetTime
     } = await fetchLatestImage();
 
-    const points =
+    const result =
       await parseKyoshinImage(buffer);
 
     io.emit("kyoshin", {
@@ -193,11 +263,20 @@ async function updateKyoshin(io) {
 
       url,
 
-      points
+      imageSize: {
+        width:
+          result.width,
+
+        height:
+          result.height
+      },
+
+      points:
+        result.points
     });
 
     console.log(
-      `強震モニタ更新: ${points.length}点`
+      `強震モニタ更新: ${result.points.length}点 / ${stations.length}点`
     );
   }
   catch (error) {
@@ -216,7 +295,9 @@ function startKyoshinMonitor(io) {
   stations =
     loadKyoshinStations();
 
-  console.log("強震モニタ監視開始");
+  console.log(
+    "強震モニタ監視開始"
+  );
 
   updateKyoshin(io);
 
