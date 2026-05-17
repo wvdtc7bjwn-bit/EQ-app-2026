@@ -120,6 +120,16 @@ function getEventId(telegram, earthquake) {
   );
 }
 
+function getLongPeriodIntensity(intensity) {
+  return (
+    intensity?.maxLgInt ??
+    intensity?.maxLongPeriodIntensity ??
+    intensity?.maxLgIntensity ??
+    intensity?.lgCategory ??
+    null
+  );
+}
+
 function normalizeStationPoint(station) {
   const coordinate =
     station?.coordinate ??
@@ -229,6 +239,9 @@ function parseDmdataEarthquake(telegram) {
     intensity:
       convertDmdataIntensityText(maxInt),
 
+    longPeriodIntensity:
+      getLongPeriodIntensity(intensity),
+
     magnitude:
       earthquake?.magnitude?.value ??
       hypocenter?.magnitude?.value ??
@@ -284,6 +297,9 @@ function parseVXSE51(telegram) {
     intensity:
       convertDmdataIntensityText(maxInt),
 
+    longPeriodIntensity:
+      getLongPeriodIntensity(intensity),
+
     magnitude:
       "-",
 
@@ -334,6 +350,9 @@ function parseVXSE52(telegram) {
 
     intensity:
       "-",
+
+    longPeriodIntensity:
+      null,
 
     magnitude:
       earthquake?.magnitude?.value ??
@@ -414,6 +433,9 @@ function parseDmdataEew(telegram) {
 
     intensity:
       convertDmdataIntensityText(maxInt),
+
+    longPeriodIntensity:
+      getLongPeriodIntensity(intensity),
 
     magnitude:
       earthquake?.magnitude?.value ??

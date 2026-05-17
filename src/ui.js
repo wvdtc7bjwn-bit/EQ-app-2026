@@ -30,6 +30,9 @@ export function updateCurrentInfo(data) {
   const lngBox =
     document.getElementById("lng-box");
 
+  const lngValue =
+    document.getElementById("lng-value");
+
   const intensityLabel =
     document.querySelector(".intensity-label");
 
@@ -37,7 +40,6 @@ export function updateCurrentInfo(data) {
     document.querySelector(".quake-desc");
 
   eewArea.classList.add("hidden");
-  lngBox.classList.add("hidden");
   quakePlace.classList.remove("hidden");
   tsunamiBox.classList.remove("hidden");
 
@@ -45,7 +47,7 @@ export function updateCurrentInfo(data) {
     "最大震度";
 
   intensityValue.textContent =
-    data.intensity;
+    data.intensity ?? "-";
 
   intensityBox.style.background =
     getIntensityColor(data.scale);
@@ -54,7 +56,7 @@ export function updateCurrentInfo(data) {
     formatTime(data.time);
 
   quakePlace.textContent =
-    data.place;
+    data.place ?? "震源調査中";
 
   magnitudeValue.textContent =
     formatMagnitude(data.magnitude);
@@ -63,16 +65,22 @@ export function updateCurrentInfo(data) {
     formatDepth(data.depth);
 
   tsunamiBox.textContent =
-    "津波の心配なし";
+    "津波情報・調査中";
 
   tsunamiBox.style.background =
     "#31486d";
 
   quakeDesc.textContent =
-    "で地震がありました";
+    "";
 
   quakeDesc.style.color =
     "#e2e8f0";
+
+  updateLongPeriodBox(
+    lngBox,
+    lngValue,
+    data.longPeriodIntensity
+  );
 }
 
 export function showEEW(
@@ -116,6 +124,9 @@ export function showEEW(
   const lngBox =
     document.getElementById("lng-box");
 
+  const lngValue =
+    document.getElementById("lng-value");
+
   const reportText =
     reportNumber ? ` #${reportNumber}` : "";
 
@@ -135,7 +146,7 @@ export function showEEW(
   quakePlace.classList.add("hidden");
 
   eewArea.innerHTML =
-    `${data.place} <small>で地震</small>`;
+    `${data.place ?? "震源調査中"} <small>で地震</small>`;
 
   eewArea.classList.remove("hidden");
 
@@ -146,12 +157,10 @@ export function showEEW(
     "推定最大震度";
 
   intensityValue.textContent =
-    data.intensity;
+    data.intensity ?? "-";
 
   intensityBox.style.background =
     getIntensityColor(data.scale);
-
-  lngBox.classList.remove("hidden");
 
   magnitudeValue.textContent =
     formatMagnitude(data.magnitude);
@@ -168,6 +177,37 @@ export function showEEW(
 
   quakeDesc.style.color =
     isWarning ? "#f5df8a" : "#e2e8f0";
+
+  updateLongPeriodBox(
+    lngBox,
+    lngValue,
+    data.longPeriodIntensity
+  );
+}
+
+function updateLongPeriodBox(
+  lngBox,
+  lngValue,
+  longPeriodIntensity
+) {
+  if (!lngBox || !lngValue) {
+    return;
+  }
+
+  if (
+    longPeriodIntensity !== null &&
+    longPeriodIntensity !== undefined &&
+    longPeriodIntensity !== "-" &&
+    longPeriodIntensity !== ""
+  ) {
+    lngBox.classList.remove("hidden");
+
+    lngValue.textContent =
+      longPeriodIntensity;
+  }
+  else {
+    lngBox.classList.add("hidden");
+  }
 }
 
 export function updateTime() {
@@ -199,10 +239,12 @@ export function updatePoints(points, scaleList) {
       document.createElement("div");
 
     const intensity =
-      scaleList?.[point.scale] ?? "-";
+      scaleList?.[point.scale] ??
+      point.intensity ??
+      "-";
 
     div.textContent =
-      `${point.addr}　震度 ${intensity}`;
+      `${point.name ?? point.addr ?? "観測点"}　震度 ${intensity}`;
 
     div.style.background =
       getIntensityColor(point.scale);
