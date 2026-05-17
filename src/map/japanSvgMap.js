@@ -867,22 +867,64 @@ function setupSvgInteractions() {
 }
 
 export function updateSvgEewWaves(
-  data
+  data,
+  options = {}
 ) {
   if (
-    !data?.latitude ||
-    !data?.longitude ||
+    data?.latitude === null ||
+    data?.latitude === undefined ||
+    data?.longitude === null ||
+    data?.longitude === undefined ||
     !data?.time
   ) {
+    console.log(
+      "EEW波描画スキップ:",
+      data
+    );
+
     return;
   }
 
+  const replayMode =
+    options.replay === true;
+
+  let originTime;
+
+  if (replayMode) {
+    originTime =
+      Date.now();
+  }
+  else {
+    originTime =
+      new Date(
+        data.time
+      ).getTime();
+
+    if (
+      Number.isNaN(originTime)
+    ) {
+      originTime =
+        Date.now();
+    }
+  }
+
   activeEewWave = {
-    latitude: data.latitude,
-    longitude: data.longitude,
-    depthKm: Number(data.depth) || 10,
-    originTime: new Date(data.time).getTime()
+    latitude:
+      Number(data.latitude),
+
+    longitude:
+      Number(data.longitude),
+
+    depthKm:
+      Number(data.depth) || 10,
+
+    originTime
   };
+
+  console.log(
+    "EEW波描画開始:",
+    activeEewWave
+  );
 
   if (eewAnimationId) {
     cancelAnimationFrame(

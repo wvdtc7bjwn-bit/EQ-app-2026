@@ -31,6 +31,23 @@ app.use(
 
 io.on("connection", (socket) => {
   console.log("ブラウザ接続");
+
+ socket.on(
+  "replay-telegram",
+  (telegram) => {
+    console.log(
+      "replay受信:",
+      telegram?.head?.type
+    );
+
+    telegram.__replay = true;
+
+    routeTelegram(
+      telegram,
+      io
+    );
+   }
+  );
 });
 
 async function startDmdataSocket() {

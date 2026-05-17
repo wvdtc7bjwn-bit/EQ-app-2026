@@ -75,11 +75,17 @@ socket.on("eew", (data) => {
 
   if (data.latitude && data.longitude) {
     updateSvgHypocenter(
-      data.latitude,
-      data.longitude
-    );
-    updateSvgEewWaves(data);
-  }
+     data.latitude,
+     data.longitude
+  );
+
+    updateSvgEewWaves(
+     data,
+     {
+      replay: data.isReplay === true
+     }
+  );
+ }
 });
 
 socket.on("dmdata-telegram", (telegram) => {
