@@ -27,6 +27,15 @@ let viewBox = {
   height: svgMapConfig.height
 };
 
+let targetViewBox = {
+  x: 0,
+  y: 0,
+  width: svgMapConfig.width,
+  height: svgMapConfig.height
+};
+
+let zoomAnimationId = null;
+
 let isDragging = false;
 let dragStart = null;
 let kyoshinLayer = null;
@@ -740,38 +749,95 @@ function updateViewBox() {
   );
 }
 
+function animateViewBox() {
+  const ease =
+    0.22;
+
+  viewBox.x +=
+    (targetViewBox.x - viewBox.x) *
+    ease;
+
+  viewBox.y +=
+    (targetViewBox.y - viewBox.y) *
+    ease;
+
+  viewBox.width +=
+    (targetViewBox.width - viewBox.width) *
+    ease;
+
+  viewBox.height +=
+    (targetViewBox.height - viewBox.height) *
+    ease;
+
+  updateViewBox();
+
+  const diff =
+    Math.abs(targetViewBox.x - viewBox.x) +
+    Math.abs(targetViewBox.y - viewBox.y) +
+    Math.abs(targetViewBox.width - viewBox.width) +
+    Math.abs(targetViewBox.height - viewBox.height);
+
+  if (diff > 0.05) {
+    zoomAnimationId =
+      requestAnimationFrame(
+        animateViewBox
+      );
+  }
+  else {
+    viewBox = {
+      ...targetViewBox
+    };
+
+    updateViewBox();
+
+    zoomAnimationId =
+      null;
+  }
+}
+
+function startViewBoxAnimation() {
+  if (zoomAnimationId) {
+    return;
+  }
+
+  zoomAnimationId =
+    requestAnimationFrame(
+      animateViewBox
+    );
+}
+
 function setupSvgInteractions() {
-  svgRoot.addEventListener(
+    svgRoot.addEventListener(
     "wheel",
     event => {
       event.preventDefault();
 
       const zoomFactor =
         event.deltaY < 0
-          ? 0.88
-          : 1.14;
+          ? 0.86
+          : 1.16;
 
       const rect =
         svgRoot.getBoundingClientRect();
 
       const mouseX =
-        viewBox.x +
+        targetViewBox.x +
         ((event.clientX - rect.left) /
           rect.width) *
-          viewBox.width;
+          targetViewBox.width;
 
       const mouseY =
-        viewBox.y +
+        targetViewBox.y +
         ((event.clientY - rect.top) /
           rect.height) *
-          viewBox.height;
+          targetViewBox.height;
 
       const newWidth =
         Math.max(
           svgMapConfig.width / 12,
           Math.min(
             svgMapConfig.width * 1.6,
-            viewBox.width *
+            targetViewBox.width *
               zoomFactor
           )
         );
@@ -781,36 +847,39 @@ function setupSvgInteractions() {
           svgMapConfig.height / 12,
           Math.min(
             svgMapConfig.height * 1.6,
-            viewBox.height *
+            targetViewBox.height *
               zoomFactor
           )
         );
 
       const scaleX =
         newWidth /
-        viewBox.width;
+        targetViewBox.width;
 
       const scaleY =
         newHeight /
-        viewBox.height;
+        targetViewBox.height;
 
-      viewBox.x =
+      targetViewBox.x =
         mouseX -
-        (mouseX - viewBox.x) *
+        (mouseX - targetViewBox.x) *
           scaleX;
 
-      viewBox.y =
+      targetViewBox.y =
         mouseY -
-        (mouseY - viewBox.y) *
+        (mouseY - targetViewBox.y) *
           scaleY;
 
-      viewBox.width =
+      targetViewBox.width =
         newWidth;
 
-      viewBox.height =
+      targetViewBox.height =
         newHeight;
 
-      updateViewBox();
+      startViewBoxAnimation();
+    },
+    {
+      passive: false
     }
   );
 
@@ -876,6 +945,9 @@ function setupSvgInteractions() {
     () => {
       isDragging =
         false;
+      targetViewBox = {
+        ...viewBox
+    };  
 
       if (svgRoot) {
         svgRoot.style.cursor =
