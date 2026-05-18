@@ -12,7 +12,7 @@ export const scaleList = {
 
 export const intensityColors = {
   10: "#01aff9",
-  20: "#86d97f",
+  20: "#13b605",
   30: "#f5e904",
   40: "#f8b304",
   45: "#f93904",

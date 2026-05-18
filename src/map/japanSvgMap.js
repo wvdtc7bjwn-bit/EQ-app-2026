@@ -43,7 +43,7 @@ let kyoshinLayer = null;
 
 const intensityColors = {
   10: "#01aff9",
-  20: "#86d97f",
+  20: "#13b605",
   30: "#f5e904",
   40: "#f8b304",
   45: "#f93904",
@@ -780,7 +780,7 @@ function getAreaIntensityColor(
 ) {
   const table = {
     "1": "#01aff9",
-    "2": "#86d97f",
+    "2": "#13b605",
     "3": "#f5e904",
     "4": "#f8b304",
     "5-": "#f93904",
