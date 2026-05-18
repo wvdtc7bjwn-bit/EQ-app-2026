@@ -431,7 +431,10 @@ function parseDmdataEarthquake(telegram) {
       ),
 
     scaleList:
-      getScaleList()
+      getScaleList(),
+
+    telegramType:
+      telegram.head?.type ?? "VXSE53",
   };
 }
 
@@ -507,7 +510,10 @@ function parseVXSE51(telegram) {
       ),
 
     scaleList:
-      getScaleList()
+      getScaleList(),
+
+    telegramType:
+     "VXSE51",  
   };
 }
 
@@ -589,7 +595,10 @@ function parseVXSE52(telegram) {
       [],
 
     scaleList:
-      getScaleList()
+      getScaleList(),
+
+    telegramType:
+      "VXSE52",  
   };
 }
 
@@ -620,9 +629,6 @@ function parseDmdataEew(telegram) {
     body?.forecastMaxInt ??
     body?.maxInt;
 
-  const isWarning =
-    body?.isWarning === true;
-
   return {
     eventId:
       getEventId(
@@ -634,10 +640,14 @@ function parseDmdataEew(telegram) {
     type:
       telegram.head?.type,
 
+    telegramType:
+      telegram.head?.type ?? "VXSE45",
+
     isReplay:
       telegram.__replay === true,
 
-    isWarning,
+    isWarning:
+      body?.isWarning === true,
 
     isLastInfo:
       body?.isLastInfo === true,

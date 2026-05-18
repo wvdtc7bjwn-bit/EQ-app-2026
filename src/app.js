@@ -27,6 +27,7 @@ import {
 
 let eewEndTimer = null;
 let eewTimeoutTimer = null;
+let temporaryInfoTimer = null;
 let latestEewData = null;
 
 function clearEewTimers() {
@@ -59,6 +60,60 @@ function hasCoordinate(data) {
   );
 }
 
+function restoreEewView() {
+  if (!latestEewData) {
+    return;
+  }
+
+  if (latestEewData.isWarning) {
+    setMainMode("eew-warning");
+  }
+  else {
+    setMainMode("eew-forecast");
+  }
+
+  showEEW(
+    latestEewData,
+    latestEewData.isWarning,
+    latestEewData.reportNumber
+  );
+}
+
+function showTemporaryEarthquakeInfo(data) {
+  if (temporaryInfoTimer) {
+    clearTimeout(temporaryInfoTimer);
+    temporaryInfoTimer = null;
+  }
+
+  setMainMode("earthquake");
+
+  updateCurrentInfo(data);
+  updateTime();
+
+  updatePoints(
+    data.points,
+    data.scaleList
+  );
+
+  updateSvgIntensityPoints(
+    data.points,
+    data.scaleList
+  );
+
+  if (hasCoordinate(data)) {
+    updateSvgHypocenter(
+      data.latitude,
+      data.longitude
+    );
+  }
+
+  temporaryInfoTimer =
+    setTimeout(() => {
+      restoreEewView();
+      temporaryInfoTimer = null;
+    }, 5000);
+}
+
 initializeSvgMap();
 setupPanelToggle();
 
@@ -66,18 +121,17 @@ socket.on("earthquake", (data) => {
   console.log("地震データ受信:");
   console.log(data);
 
-  /*
-    今はVXSE51/VXSE52/VXSE53の区別が
-    app.js側にまだ来ていないので、
-    一旦ここでは地震情報画面へ切替。
-    
-    次の修正で:
-    VXSE51/VXSE52 → 一時表示・P/S波継続
-    VXSE53 → EEW終了
-    に分ける。
-  */
+  if (
+    data.telegramType === "VXSE51" ||
+    data.telegramType === "VXSE52"
+  ) {
+    showTemporaryEarthquakeInfo(data);
+    return;
+  }
 
-  endEewMode("earthquake-info");
+  if (data.telegramType === "VXSE53") {
+    endEewMode("vxse53");
+  }
 
   setMainMode("earthquake");
   setSubPanel("history");
