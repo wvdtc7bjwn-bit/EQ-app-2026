@@ -1296,3 +1296,16 @@ export function updateKyoshinDots(points) {
     fragment
   );
 }
+
+export function clearSvgEewWaves() {
+  activeEewWave = null;
+
+  if (eewAnimationId) {
+    cancelAnimationFrame(eewAnimationId);
+    eewAnimationId = null;
+  }
+
+  if (eewWaveLayer) {
+    eewWaveLayer.innerHTML = "";
+  }
+}
