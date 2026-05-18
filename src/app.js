@@ -28,7 +28,8 @@ import {
   updateSvgEewWaves,
   clearSvgEewWaves,
   updateKyoshinDots,
-  setKyoshinDisplayMode
+  setKyoshinDisplayMode,
+  updateIntensityAreas
 } from "./map/japanSvgMap.js";
 
 let currentMainTab = "earthquake";
@@ -187,6 +188,10 @@ socket.on("earthquake", (data) => {
     data.scaleList
   );
 
+  updateIntensityAreas(
+  data.regions ?? []
+  );
+  
   addHistory(data);
 
   if (hasCoordinate(data)) {

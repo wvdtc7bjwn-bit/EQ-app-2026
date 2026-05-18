@@ -333,6 +333,12 @@ function createFeaturePath(feature) {
     "geometricPrecision"
   );
 
+  path.dataset.code =
+   feature.properties?.code ?? "";
+
+  path.dataset.name =
+   feature.properties?.name ?? "";
+
   return path;
 }
 
@@ -542,6 +548,60 @@ export function updateSvgIntensityPoints(
   intensityLayer.appendChild(fragment);
 }
 
+export function updateIntensityAreas(
+  regions = []
+) {
+  if (!mapLayer) {
+    return;
+  }
+
+  const paths =
+    mapLayer.querySelectorAll(
+      "path"
+    );
+
+  paths.forEach(path => {
+    path.setAttribute(
+      "fill",
+      "#1f2f25"
+    );
+
+    path.setAttribute(
+      "fill-opacity",
+      "1"
+    );
+  });
+
+  regions.forEach(region => {
+    const code =
+      String(region.code);
+
+    const intensity =
+      region.maxInt;
+
+    const target =
+      mapLayer.querySelector(
+        `path[data-code="${code}"]`
+      );
+
+    if (!target) {
+      return;
+    }
+
+    target.setAttribute(
+      "fill",
+      getAreaIntensityColor(
+        intensity
+      )
+    );
+
+    target.setAttribute(
+      "fill-opacity",
+      "0.92"
+    );
+  });
+}
+
 export function updateSvgHypocenter(
   lat,
   lng
@@ -712,6 +772,31 @@ function getIntensityColor(scale) {
   return (
     intensityColors[scale] ??
     "#4b5563"
+  );
+}
+
+function getAreaIntensityColor(
+  intensity
+) {
+  const table = {
+    "1": "#01aff9",
+    "2": "#86d97f",
+    "3": "#f5e904",
+    "4": "#f8b304",
+    "5-": "#f93904",
+    "5弱": "#f93904",
+    "5+": "#f50404",
+    "5強": "#f50404",
+    "6-": "#c50886",
+    "6弱": "#c50886",
+    "6+": "#9e07cb",
+    "6強": "#9e07cb",
+    "7": "#420092"
+  };
+
+  return (
+    table[intensity] ??
+    "#1f2f25"
   );
 }
 
