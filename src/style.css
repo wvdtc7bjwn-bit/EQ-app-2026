@@ -1,0 +1,93 @@
+#main-tabs {
+  position: absolute;
+
+  top: 18px;
+  left: 310px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 10px;
+
+  z-index: 1200;
+}
+
+.main-tab {
+  width: 44px;
+  height: 44px;
+
+  border:
+    1px solid
+    rgba(180, 200, 230, 0.12);
+
+  border-radius: 14px;
+
+  background:
+    rgba(10, 18, 30, 0.92);
+
+  color: #eef4ff;
+
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+
+  backdrop-filter: blur(12px);
+
+  transition:
+    transform 0.14s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.main-tab:hover {
+  transform: scale(1.06);
+  background: rgba(34, 49, 73, 0.96);
+}
+
+.main-tab.active {
+  background:
+    linear-gradient(
+      180deg,
+      #5d7091 0%,
+      #3d4d67 100%
+    );
+
+  box-shadow:
+    0 0 18px
+    rgba(140, 180, 255, 0.32);
+}
+
+.tab-icon {
+  width: 24px;
+  height: 24px;
+
+  stroke: #f3f7ff;
+
+  fill: none;
+
+  stroke-width: 2.3;
+
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  opacity: 0.95;
+}
+
+#tab-earthquake .tab-icon {
+  width: 25px;
+  height: 25px;
+}
+
+#tab-kyoshin .tab-icon {
+  width: 28px;
+  height: 28px;
+}
+
+#tab-tsunami .tab-icon {
+  width: 27px;
+  height: 27px;
+}

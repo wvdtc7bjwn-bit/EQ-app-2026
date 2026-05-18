@@ -17,6 +17,11 @@ import {
 } from "./history.js";
 
 import {
+  setupMainTabs,
+  updateMainTabUI
+} from "./mainTabs.js";
+
+import {
   initializeSvgMap,
   updateSvgHypocenter,
   updateSvgIntensityPoints,
@@ -25,6 +30,8 @@ import {
   updateKyoshinDots,
   setKyoshinDisplayMode
 } from "./map/japanSvgMap.js";
+
+let currentMainTab = "earthquake";
 
 let eewEndTimer = null;
 let eewTimeoutTimer = null;
@@ -61,10 +68,30 @@ function hasCoordinate(data) {
   );
 }
 
+function applyMainTab(tab) {
+  currentMainTab = tab;
+
+  updateMainTabUI(tab);
+
+  console.log("タブ切替:", tab);
+
+  if (tab === "earthquake") {
+    setKyoshinDisplayMode("active-only");
+  }
+  else if (tab === "kyoshin") {
+    setKyoshinDisplayMode("normal");
+  }
+  else if (tab === "tsunami") {
+    setKyoshinDisplayMode("active-only");
+  }
+}
+
 function restoreEewView() {
   if (!latestEewData) {
     return;
   }
+
+  applyMainTab("kyoshin");
 
   if (latestEewData.isWarning) {
     setMainMode("eew-warning");
@@ -85,6 +112,8 @@ function showTemporaryEarthquakeInfo(data) {
     clearTimeout(temporaryInfoTimer);
     temporaryInfoTimer = null;
   }
+
+  applyMainTab("earthquake");
 
   setMainMode("earthquake");
 
@@ -118,13 +147,15 @@ function showTemporaryEarthquakeInfo(data) {
 initializeSvgMap();
 setupPanelToggle();
 
+setupMainTabs(tab => {
+  applyMainTab(tab);
+});
+
+applyMainTab("earthquake");
+
 socket.on("earthquake", (data) => {
   console.log("地震データ受信:");
   console.log(data);
-
-   setKyoshinDisplayMode(
-    "active-only"
-  );
 
   if (
     data.telegramType === "VXSE51" ||
@@ -137,6 +168,8 @@ socket.on("earthquake", (data) => {
   if (data.telegramType === "VXSE53") {
     endEewMode("vxse53");
   }
+
+  applyMainTab("earthquake");
 
   setMainMode("earthquake");
   setSubPanel("history");
@@ -168,9 +201,7 @@ socket.on("eew", (data) => {
   console.log("EEWデータ受信:");
   console.log(data);
 
-  setKyoshinDisplayMode(
-    "normal"
-  );
+  applyMainTab("kyoshin");
 
   latestEewData = data;
 
@@ -234,6 +265,13 @@ socket.on("kyoshin", (data) => {
   updateKyoshinDots(
     data.points
   );
+});
+
+socket.on("tsunami", (data) => {
+  console.log("津波情報受信:");
+  console.log(data);
+
+  applyMainTab("tsunami");
 });
 
 socket.on("dmdata-telegram", (telegram) => {

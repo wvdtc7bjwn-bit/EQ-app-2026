@@ -5,6 +5,7 @@
   <title>地震アプリ</title>
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css">
+  <link rel="stylesheet" href="./src/style.css">
 
   <style>
     html,
@@ -435,6 +436,29 @@
       </div>
 
     </div>
+
+    <div id="main-tabs">
+  <button id="tab-earthquake" class="main-tab active" title="地震情報">
+    <svg viewBox="0 0 24 24" class="tab-icon">
+      <circle cx="12" cy="12" r="8"></circle>
+      <path d="M12 11v6"></path>
+      <circle cx="12" cy="7.5" r="1.4"></circle>
+    </svg>
+  </button>
+
+  <button id="tab-kyoshin" class="main-tab" title="強震モニタ">
+    <svg viewBox="0 0 24 24" class="tab-icon tab-icon-pulse">
+      <path d="M3 13h4l3-8 4 14 3-8h4"></path>
+    </svg>
+  </button>
+
+  <button id="tab-tsunami" class="main-tab" title="津波情報">
+    <svg viewBox="0 0 24 24" class="tab-icon">
+      <path d="M12 3L22 20H2L12 3Z"></path>
+      <path d="M7 16c2-2 4-2 6 0s4 2 6 0"></path>
+    </svg>
+  </button>
+</div>
 
     <div id="map-area">
       <div id="update-time">
