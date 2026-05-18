@@ -19,6 +19,7 @@ let mapBounds = null;
 let eewWaveLayer = null;
 let activeEewWave = null;
 let eewAnimationId = null;
+let kyoshinDisplayMode = "normal";
 
 let viewBox = {
   x: 0,
@@ -1214,6 +1215,12 @@ export function updateKyoshinDots(points) {
     document.createDocumentFragment();
 
   points.forEach(point => {
+  if (
+     kyoshinDisplayMode === "active-only" &&
+     !isKyoshinActiveColor(point)
+   ) {
+     return;
+    }
     if (
       point.latitude === null ||
       point.latitude === undefined ||
@@ -1307,5 +1314,63 @@ export function clearSvgEewWaves() {
 
   if (eewWaveLayer) {
     eewWaveLayer.innerHTML = "";
+  }
+}
+
+function isKyoshinActiveColor(point) {
+  if (!Array.isArray(point.rgb)) {
+    return false;
+  }
+
+  const [r, g, b] =
+    point.rgb;
+
+  // 黒・暗色・背景色っぽい点を除外
+  if (
+    r < 20 &&
+    g < 20 &&
+    b < 20
+  ) {
+    return false;
+  }
+
+  // 青系以下を「0未満〜0付近」として除外
+  // 防災科研色を震度変換はしないが、表示制御だけ行う
+  if (
+    b > r &&
+    b > g &&
+    r < 80
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+export function setKyoshinDisplayMode(mode) {
+  kyoshinDisplayMode =
+    mode;
+
+  if (!kyoshinLayer) {
+    return;
+  }
+
+  if (mode === "hidden") {
+    kyoshinLayer.style.display =
+      "none";
+  }
+  else if (mode === "active-only") {
+    kyoshinLayer.style.display =
+      "block";
+
+    kyoshinLayer.style.opacity =
+      "0.28";
+  }
+  else {
+    kyoshinLayer.style.display =
+      "block";
+
+    kyoshinLayer.style.opacity =
+      "1";
   }
 }

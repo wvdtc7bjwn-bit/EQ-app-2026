@@ -22,7 +22,8 @@ import {
   updateSvgIntensityPoints,
   updateSvgEewWaves,
   clearSvgEewWaves,
-  updateKyoshinDots
+  updateKyoshinDots,
+  setKyoshinDisplayMode
 } from "./map/japanSvgMap.js";
 
 let eewEndTimer = null;
@@ -121,6 +122,10 @@ socket.on("earthquake", (data) => {
   console.log("地震データ受信:");
   console.log(data);
 
+   setKyoshinDisplayMode(
+    "active-only"
+  );
+
   if (
     data.telegramType === "VXSE51" ||
     data.telegramType === "VXSE52"
@@ -162,6 +167,10 @@ socket.on("earthquake", (data) => {
 socket.on("eew", (data) => {
   console.log("EEWデータ受信:");
   console.log(data);
+
+  setKyoshinDisplayMode(
+    "normal"
+  );
 
   latestEewData = data;
 
