@@ -20,6 +20,7 @@ let eewWaveLayer = null;
 let activeEewWave = null;
 let eewAnimationId = null;
 let kyoshinDisplayMode = "normal";
+let intensityLabelLayer = null;
 
 let viewBox = {
   x: 0,
@@ -113,6 +114,7 @@ export function initializeSvgMap() {
     calculateProjectedBounds();
 
 buildMapLayer();
+buildIntensityLabelLayer();
 buildEewWaveLayer();
 buildKyoshinLayer();
 buildIntensityLayer();
@@ -389,6 +391,23 @@ function buildEewWaveLayer() {
   );
 }
 
+function buildIntensityLabelLayer() {
+  intensityLabelLayer =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g"
+    );
+
+  intensityLabelLayer.setAttribute(
+    "id",
+    "intensity-label-layer"
+  );
+
+  svgRoot.appendChild(
+    intensityLabelLayer
+  );
+}
+
 function buildKyoshinLayer() {
   kyoshinLayer =
     document.createElementNS(
@@ -555,21 +574,16 @@ export function updateIntensityAreas(
     return;
   }
 
+  if (intensityLabelLayer) {
+    intensityLabelLayer.innerHTML = "";
+  }
+
   const paths =
-    mapLayer.querySelectorAll(
-      "path"
-    );
+    mapLayer.querySelectorAll("path");
 
   paths.forEach(path => {
-    path.setAttribute(
-      "fill",
-      "#1f2f25"
-    );
-
-    path.setAttribute(
-      "fill-opacity",
-      "1"
-    );
+    path.setAttribute("fill", "#1f2f25");
+    path.setAttribute("fill-opacity", "1");
   });
 
   regions.forEach(region => {
@@ -590,16 +604,113 @@ export function updateIntensityAreas(
 
     target.setAttribute(
       "fill",
-      getAreaIntensityColor(
-        intensity
-      )
+      getAreaIntensityColor(intensity)
     );
 
     target.setAttribute(
       "fill-opacity",
       "0.92"
     );
+
+    drawIntensityAreaLabel(
+      target,
+      intensity
+    );
   });
+}
+
+function drawIntensityAreaLabel(
+  path,
+  intensity
+) {
+  if (!intensityLabelLayer) {
+    return;
+  }
+
+  const bbox =
+    path.getBBox();
+
+  if (
+    bbox.width < 4 ||
+    bbox.height < 4
+  ) {
+    return;
+  }
+
+  const x =
+    bbox.x + bbox.width / 2;
+
+  const y =
+    bbox.y + bbox.height / 2;
+
+  const group =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g"
+    );
+
+  const rect =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "rect"
+    );
+
+  rect.setAttribute("x", x - 10);
+  rect.setAttribute("y", y - 10);
+  rect.setAttribute("width", "20");
+  rect.setAttribute("height", "20");
+  rect.setAttribute("rx", "4");
+  rect.setAttribute("ry", "4");
+  rect.setAttribute("fill", "rgba(0,0,0,0.22)");
+  rect.setAttribute("stroke", "rgba(255,255,255,0.25)");
+  rect.setAttribute("stroke-width", "0.5");
+  rect.setAttribute("vector-effect", "non-scaling-stroke");
+
+  const text =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "text"
+    );
+
+  text.setAttribute("x", x);
+  text.setAttribute("y", y + 0.5);
+  text.setAttribute("text-anchor", "middle");
+  text.setAttribute("dominant-baseline", "middle");
+  text.setAttribute("font-size", "13");
+  text.setAttribute("font-weight", "900");
+  text.setAttribute("fill", "#111827");
+  text.setAttribute("stroke", "rgba(255,255,255,0.45)");
+  text.setAttribute("stroke-width", "0.45");
+  text.setAttribute("paint-order", "stroke");
+  text.setAttribute("vector-effect", "non-scaling-stroke");
+
+  text.textContent =
+    formatIntensityLabel(intensity);
+
+  group.appendChild(rect);
+  group.appendChild(text);
+
+  intensityLabelLayer.appendChild(group);
+}
+
+function formatIntensityLabel(intensity) {
+  const table = {
+    "1": "1",
+    "2": "2",
+    "3": "3",
+    "4": "4",
+    "5-": "5−",
+    "5弱": "5−",
+    "5+": "5+",
+    "5強": "5+",
+    "6-": "6−",
+    "6弱": "6−",
+    "6+": "6+",
+    "6強": "6+",
+    "7": "7"
+  };
+
+  return table[intensity] ?? String(intensity ?? "");
 }
 
 export function updateSvgHypocenter(
