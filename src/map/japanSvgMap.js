@@ -66,33 +66,6 @@ const tsunamiColors = {
   forecast: "#05bbf8"
 };
 
-function getTsunamiColor(kind) {
-  if (!kind) {
-    return null;
-  }
-
-  if (kind.includes("大津波警報")) {
-    return tsunamiColors.majorWarning;
-  }
-
-  if (kind.includes("津波警報")) {
-    return tsunamiColors.warning;
-  }
-
-  if (kind.includes("津波注意報")) {
-    return tsunamiColors.advisory;
-  }
-
-  if (
-    kind.includes("津波予報") ||
-    kind.includes("若干の海面変動")
-  ) {
-    return tsunamiColors.forecast;
-  }
-
-  return null;
-}
-
 export function initializeSvgMap() {
   const mapArea =
     document.getElementById("map-area");
@@ -414,6 +387,113 @@ function createPolygonPathData(
   return pathData;
 }
 
+function createLinePathData(
+  coordinates
+) {
+  let pathData = "";
+
+  coordinates.forEach((line, lineIndex) => {
+    line.forEach((coord, index) => {
+      const fitted =
+        projectAndFit(
+          coord[1],
+          coord[0]
+        );
+
+      if (index === 0) {
+        pathData +=
+          `M ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
+      }
+      else {
+        pathData +=
+          ` L ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
+      }
+    });
+
+    if (lineIndex < coordinates.length - 1) {
+      pathData += " ";
+    }
+  });
+
+  return pathData;
+}
+
+function createTsunamiFeaturePath(
+  feature
+) {
+  const geometry =
+    feature.geometry;
+
+  if (!geometry) {
+    return null;
+  }
+
+  let pathData = "";
+
+  if (geometry.type === "LineString") {
+    pathData =
+      createLinePathData([
+        geometry.coordinates
+      ]);
+  }
+  else if (geometry.type === "MultiLineString") {
+    pathData =
+      createLinePathData(
+        geometry.coordinates
+      );
+  }
+  else {
+    return createFeaturePath(feature);
+  }
+
+  if (!pathData) {
+    return null;
+  }
+
+  const path =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "path"
+    );
+
+  path.setAttribute(
+    "d",
+    pathData
+  );
+
+  path.setAttribute(
+    "fill",
+    "none"
+  );
+
+  path.setAttribute(
+    "stroke",
+    "transparent"
+  );
+
+  path.setAttribute(
+    "stroke-width",
+    "0"
+  );
+
+  path.setAttribute(
+    "vector-effect",
+    "non-scaling-stroke"
+  );
+
+  path.setAttribute(
+    "stroke-linecap",
+    "round"
+  );
+
+  path.setAttribute(
+    "stroke-linejoin",
+    "round"
+  );
+
+  return path;
+}
+
 function buildEewWaveLayer() {
   eewWaveLayer =
     document.createElementNS(
@@ -432,6 +512,8 @@ function buildEewWaveLayer() {
 }
 
 function buildTsunamiLayer() {
+  console.log("津波レイヤー生成開始");
+
   tsunamiLayer =
     document.createElementNS(
       "http://www.w3.org/2000/svg",
@@ -446,9 +528,27 @@ function buildTsunamiLayer() {
   const fragment =
     document.createDocumentFragment();
 
+  console.log(
+    "津波features:",
+    tsunamiAreaGeoJson.features.length
+  );
+
   tsunamiAreaGeoJson.features.forEach(feature => {
-    const path =
-      createFeaturePath(feature);
+    let path = null;
+
+    try {
+      path =
+        createTsunamiFeaturePath(feature);
+    }
+    catch (error) {
+      console.error(
+        "津波path生成失敗:",
+        feature,
+        error
+      );
+
+      return;
+    }
 
     if (!path) {
       return;
@@ -456,10 +556,15 @@ function buildTsunamiLayer() {
 
     const code =
       feature.properties?.code ??
+      feature.properties?.Code ??
+      feature.properties?.CODE ??
+      feature.properties?.areaCode ??
+      feature.properties?.AREA_CODE ??
       "";
 
     const name =
       feature.properties?.name ??
+      feature.properties?.Name ??
       "";
 
     path.dataset.code =
@@ -488,15 +593,24 @@ function buildTsunamiLayer() {
       "0"
     );
 
+    path.setAttribute(
+      "vector-effect",
+      "non-scaling-stroke"
+    );
+
     fragment.appendChild(path);
   });
 
-  tsunamiLayer.appendChild(
-    fragment
-  );
+  tsunamiLayer.appendChild(fragment);
 
-  svgRoot.appendChild(
-    tsunamiLayer
+  svgRoot.appendChild(tsunamiLayer);
+
+  console.log(
+    "津波レイヤー作成:",
+    tsunamiLayer.querySelectorAll("path").length,
+    [...tsunamiLayer.querySelectorAll("path")]
+      .slice(0, 5)
+      .map(p => p.dataset.code)
   );
 }
 
@@ -1755,37 +1869,47 @@ export function updateTsunamiAreas(
       );
 
     if (!target) {
-      console.log(
-        "津波区域未一致:",
-        code
-      );
+  console.log(
+    "津波区域未一致:",
+    code
+  );
 
-      return;
-    }
+  return;
+}
 
-    target.setAttribute(
-      "fill",
-      color
-    );
+target.setAttribute(
+  "fill",
+  "none"
+);
 
-    target.setAttribute(
-      "fill-opacity",
-      "0.72"
-    );
+target.setAttribute(
+  "stroke",
+  color
+);
 
-    target.setAttribute(
-      "stroke",
-      color
-    );
+target.setAttribute(
+  "stroke-width",
+  "5"
+);
 
-    target.setAttribute(
-      "stroke-width",
-      "1.8"
-    );
+target.setAttribute(
+  "stroke-opacity",
+  "0.95"
+);
 
-    target.setAttribute(
-      "vector-effect",
-      "non-scaling-stroke"
-    );
+target.setAttribute(
+  "stroke-linecap",
+  "round"
+);
+
+target.setAttribute(
+  "stroke-linejoin",
+  "round"
+);
+
+target.setAttribute(
+  "vector-effect",
+  "non-scaling-stroke"
+);
   });
 }

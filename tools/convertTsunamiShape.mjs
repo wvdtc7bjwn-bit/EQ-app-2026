@@ -16,7 +16,7 @@ const source =
     shpPath,
     dbfPath,
     {
-      encoding: "shift_jis"
+      encoding: "utf-8"
     }
   );
 
