@@ -11,6 +11,10 @@ import {
   getWaveDistancesByJma2001
 } from "./travelTime.js";
 
+import {
+  tsunamiAreaGeoJson
+} from "./data/tsunamiAreaGeoJson.js";
+
 let svgRoot = null;
 let mapLayer = null;
 let intensityLayer = null;
@@ -21,6 +25,7 @@ let activeEewWave = null;
 let eewAnimationId = null;
 let kyoshinDisplayMode = "normal";
 let intensityLabelLayer = null;
+let tsunamiLayer = null;
 
 let viewBox = {
   x: 0,
@@ -53,6 +58,40 @@ const intensityColors = {
   60: "#9e07cb",
   70: "#420092"
 };
+
+const tsunamiColors = {
+  majorWarning: "#7b2cff",
+  warning: "#ff2d2d",
+  advisory: "#ffd400",
+  forecast: "#05bbf8"
+};
+
+function getTsunamiColor(kind) {
+  if (!kind) {
+    return null;
+  }
+
+  if (kind.includes("大津波警報")) {
+    return tsunamiColors.majorWarning;
+  }
+
+  if (kind.includes("津波警報")) {
+    return tsunamiColors.warning;
+  }
+
+  if (kind.includes("津波注意報")) {
+    return tsunamiColors.advisory;
+  }
+
+  if (
+    kind.includes("津波予報") ||
+    kind.includes("若干の海面変動")
+  ) {
+    return tsunamiColors.forecast;
+  }
+
+  return null;
+}
 
 export function initializeSvgMap() {
   const mapArea =
@@ -114,6 +153,7 @@ export function initializeSvgMap() {
     calculateProjectedBounds();
 
 buildMapLayer();
+buildTsunamiLayer();
 buildIntensityLabelLayer();
 buildEewWaveLayer();
 buildKyoshinLayer();
@@ -388,6 +428,75 @@ function buildEewWaveLayer() {
 
   svgRoot.appendChild(
     eewWaveLayer
+  );
+}
+
+function buildTsunamiLayer() {
+  tsunamiLayer =
+    document.createElementNS(
+      "http://www.w3.org/2000/svg",
+      "g"
+    );
+
+  tsunamiLayer.setAttribute(
+    "id",
+    "tsunami-layer"
+  );
+
+  const fragment =
+    document.createDocumentFragment();
+
+  tsunamiAreaGeoJson.features.forEach(feature => {
+    const path =
+      createFeaturePath(feature);
+
+    if (!path) {
+      return;
+    }
+
+    const code =
+      feature.properties?.code ??
+      "";
+
+    const name =
+      feature.properties?.name ??
+      "";
+
+    path.dataset.code =
+      String(code);
+
+    path.dataset.name =
+      String(name);
+
+    path.setAttribute(
+      "fill",
+      "transparent"
+    );
+
+    path.setAttribute(
+      "fill-opacity",
+      "0"
+    );
+
+    path.setAttribute(
+      "stroke",
+      "transparent"
+    );
+
+    path.setAttribute(
+      "stroke-width",
+      "0"
+    );
+
+    fragment.appendChild(path);
+  });
+
+  tsunamiLayer.appendChild(
+    fragment
+  );
+
+  svgRoot.appendChild(
+    tsunamiLayer
   );
 }
 
@@ -909,6 +1018,33 @@ function getAreaIntensityColor(
     table[intensity] ??
     "#1f2f25"
   );
+}
+
+function getTsunamiColor(kind) {
+  if (!kind) {
+    return null;
+  }
+
+  if (kind.includes("大津波警報")) {
+    return "#7b2cff";
+  }
+
+  if (kind.includes("津波警報")) {
+    return "#ff2d2d";
+  }
+
+  if (kind.includes("津波注意報")) {
+    return "#ffd400";
+  }
+
+  if (
+    kind.includes("津波予報") ||
+    kind.includes("若干")
+  ) {
+    return "#05bbf8";
+  }
+
+  return null;
 }
 
 function getPointRadius(scale) {
@@ -1569,4 +1705,87 @@ export function setKyoshinDisplayMode(mode) {
     kyoshinLayer.style.opacity =
       "1";
   }
+}
+
+export function updateTsunamiAreas(
+  areas = []
+) {
+  if (!tsunamiLayer) {
+    return;
+  }
+
+  const paths =
+    tsunamiLayer.querySelectorAll(
+      "path"
+    );
+
+  paths.forEach(path => {
+    path.setAttribute(
+      "fill",
+      "transparent"
+    );
+
+    path.setAttribute(
+      "fill-opacity",
+      "0"
+    );
+
+    path.setAttribute(
+      "stroke",
+      "transparent"
+    );
+  });
+
+  areas.forEach(area => {
+    const code =
+      String(area.code ?? "");
+
+    const color =
+      getTsunamiColor(
+        area.kind
+      );
+
+    if (!code || !color) {
+      return;
+    }
+
+    const target =
+      tsunamiLayer.querySelector(
+        `path[data-code="${code}"]`
+      );
+
+    if (!target) {
+      console.log(
+        "津波区域未一致:",
+        code
+      );
+
+      return;
+    }
+
+    target.setAttribute(
+      "fill",
+      color
+    );
+
+    target.setAttribute(
+      "fill-opacity",
+      "0.72"
+    );
+
+    target.setAttribute(
+      "stroke",
+      color
+    );
+
+    target.setAttribute(
+      "stroke-width",
+      "1.8"
+    );
+
+    target.setAttribute(
+      "vector-effect",
+      "non-scaling-stroke"
+    );
+  });
 }

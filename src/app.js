@@ -25,11 +25,12 @@ import {
   initializeSvgMap,
   updateSvgHypocenter,
   updateSvgIntensityPoints,
+  updateIntensityAreas,
   updateSvgEewWaves,
   clearSvgEewWaves,
   updateKyoshinDots,
   setKyoshinDisplayMode,
-  updateIntensityAreas
+  updateTsunamiAreas
 } from "./map/japanSvgMap.js";
 
 let currentMainTab = "earthquake";
@@ -272,13 +273,18 @@ socket.on("kyoshin", (data) => {
   );
 });
 
-socket.on("tsunami", (data) => {
-  console.log("津波情報受信:");
-  console.log(data);
+socket.on("tsunami", data => {
+  console.log(
+    "津波情報受信:",
+    data
+  );
 
   applyMainTab("tsunami");
-});
 
+  updateTsunamiAreas(
+    data.areas ?? []
+  );
+});
 socket.on("dmdata-telegram", (telegram) => {
   console.log("その他dmdata受信:");
   console.log(telegram);

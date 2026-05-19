@@ -78,10 +78,45 @@ function routeTelegram(data, io) {
     case "VTSE51": {
       console.log(`津波電文受信: ${code}`);
 
-      io.emit("tsunami", data);
+     const forecasts =
+       data.body?.tsunami
+        ?.forecasts ?? [];
 
-      break;
-    }
+     const areas =
+      forecasts.map(f => ({
+        code: f.code,
+
+        name: f.name,
+
+        kind:
+          f.kind?.name ?? "",
+
+        arrivalTime:
+          f.firstHeight
+          ?.arrivalTime,
+
+        condition:
+          f.firstHeight
+          ?.condition,
+
+        height:
+          f.maxHeight
+          ?.height
+          ?.value
+    }));
+
+  io.emit("tsunami", {
+    type: code,
+    areas
+  });
+
+  console.log(
+    "津波区域:",
+    areas.length
+  );
+
+  break;
+}
 
     case "VXSE61": {
       console.log("顕著地震受信");
@@ -99,6 +134,28 @@ function routeTelegram(data, io) {
       break;
     }
   }
+}
+
+function handleTsunamiInfo(telegram, io) {
+  const forecasts =
+    telegram.body?.tsunami?.forecasts ?? [];
+
+  const areas =
+    forecasts.map(f => ({
+      code: f.code,
+      name: f.name,
+      kind: f.kind?.name ?? "",
+      arrivalTime: f.firstHeight?.arrivalTime,
+      condition: f.firstHeight?.condition,
+      height: f.maxHeight?.height?.value
+    }));
+
+  io.emit("tsunami", {
+    type: telegram.head?.type,
+    areas
+  });
+
+  console.log("津波情報配信:", areas.length);
 }
 
 module.exports = {
