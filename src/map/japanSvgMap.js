@@ -372,12 +372,12 @@ function createPolygonPathData(
 
       if (index === 0) {
         pathData +=
-          `M ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
+          `M ${fitted.x.toFixed(1)} ${fitted.y.toFixed(1)}`;
       }
 
       else {
         pathData +=
-          ` L ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
+          ` L ${fitted.x.toFixed(1)} ${fitted.y.toFixed(1)}`;
       }
     });
 
@@ -402,11 +402,11 @@ function createLinePathData(
 
       if (index === 0) {
         pathData +=
-          `M ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
+          `M ${fitted.x.toFixed(1)} ${fitted.y.toFixed(1)}`;
       }
       else {
         pathData +=
-          ` L ${fitted.x.toFixed(2)} ${fitted.y.toFixed(2)}`;
+          ` L ${fitted.x.toFixed(1)} ${fitted.y.toFixed(1)}`;
       }
     });
 
