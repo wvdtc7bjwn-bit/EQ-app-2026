@@ -1,5 +1,34 @@
 let latestTsunamiData = null;
 
+export function showNoTsunamiPanel() {
+  const currentPanel =
+    document.querySelector(".current-panel") ||
+    document.getElementById("current-panel");
+
+  if (!currentPanel) {
+    console.warn("津波パネル表示先が見つかりません");
+    return;
+  }
+
+  currentPanel.innerHTML = `
+    <div class="tsunami-panel tsunami-empty-panel">
+      <div class="tsunami-header forecast">
+        津波情報
+      </div>
+
+      <div class="tsunami-empty-body">
+        <div class="tsunami-empty-icon">
+          ~
+        </div>
+
+        <div class="tsunami-empty-title">
+          津波情報は<br>現在発表されていません
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 export function showTsunamiPanel(data) {
   latestTsunamiData = data;
 

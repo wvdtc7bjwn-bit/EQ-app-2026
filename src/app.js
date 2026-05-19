@@ -22,7 +22,8 @@ import {
 } from "./mainTabs.js";
 
 import {
-  showTsunamiPanel
+  showTsunamiPanel,
+  showNoTsunamiPanel
 } from "./tsunamiPanel.js";
 
 import {
@@ -39,6 +40,7 @@ import {
 
 let currentMainTab = "earthquake";
 
+let latestTsunamiInfo = null;
 let eewEndTimer = null;
 let eewTimeoutTimer = null;
 let temporaryInfoTimer = null;
@@ -155,6 +157,19 @@ setupPanelToggle();
 
 setupMainTabs(tab => {
   applyMainTab(tab);
+
+  if (tab === "tsunami") {
+    if (
+      latestTsunamiInfo &&
+      Array.isArray(latestTsunamiInfo.areas) &&
+      latestTsunamiInfo.areas.length > 0
+    ) {
+      showTsunamiPanel(latestTsunamiInfo);
+    }
+    else {
+      showNoTsunamiPanel();
+    }
+  }
 });
 
 applyMainTab("earthquake");
@@ -279,6 +294,8 @@ socket.on("kyoshin", (data) => {
 
 socket.on("tsunami", data => {
   console.log("津波情報受信:", data);
+
+  latestTsunamiInfo = data;
 
   applyMainTab("tsunami");
 
