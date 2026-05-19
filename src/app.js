@@ -23,7 +23,8 @@ import {
 
 import {
   showTsunamiPanel,
-  showNoTsunamiPanel
+  showNoTsunamiPanel,
+  restoreCurrentPanel
 } from "./tsunamiPanel.js";
 
 import {
@@ -84,12 +85,20 @@ function applyMainTab(tab) {
   console.log("タブ切替:", tab);
 
   if (tab === "earthquake") {
-    setKyoshinDisplayMode("active-only");
-  }
+  restoreCurrentPanel();
+
+  setMainMode("earthquake");
+
+  setKyoshinDisplayMode("active-only");
+ }
   else if (tab === "kyoshin") {
-    setKyoshinDisplayMode("normal");
+  restoreCurrentPanel();
+
+  setKyoshinDisplayMode("normal");
   }
   else if (tab === "tsunami") {
+  restoreCurrentPanel();
+
     setKyoshinDisplayMode("active-only");
   }
 }

@@ -1,4 +1,5 @@
 let latestTsunamiData = null;
+let originalCurrentPanelHtml = null;
 
 export function showNoTsunamiPanel() {
   const currentPanel =
@@ -9,6 +10,8 @@ export function showNoTsunamiPanel() {
     console.warn("津波パネル表示先が見つかりません");
     return;
   }
+
+  saveOriginalCurrentPanel(currentPanel);
 
   currentPanel.innerHTML = `
     <div class="tsunami-panel tsunami-empty-panel">
@@ -41,7 +44,10 @@ export function showTsunamiPanel(data) {
     return;
   }
 
-  currentPanel.innerHTML = buildTsunamiPanelHtml(data);
+  saveOriginalCurrentPanel(currentPanel);
+
+  currentPanel.innerHTML =
+    buildTsunamiPanelHtml(data);
 }
 
 function buildTsunamiPanelHtml(data) {
@@ -453,4 +459,36 @@ function getObservedStatusText(st) {
   }
 
   return "観測中";
+}
+
+function saveOriginalCurrentPanel(currentPanel) {
+  if (originalCurrentPanelHtml !== null) {
+    return;
+  }
+
+  if (
+    currentPanel.querySelector(".tsunami-panel")
+  ) {
+    return;
+  }
+
+  originalCurrentPanelHtml =
+    currentPanel.innerHTML;
+}
+
+export function restoreCurrentPanel() {
+  const currentPanel =
+    document.querySelector(".current-panel") ||
+    document.getElementById("current-panel");
+
+  if (!currentPanel) {
+    return;
+  }
+
+  if (originalCurrentPanelHtml === null) {
+    return;
+  }
+
+  currentPanel.innerHTML =
+    originalCurrentPanelHtml;
 }
