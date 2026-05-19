@@ -254,11 +254,28 @@ export function updatePoints(points, scaleList) {
 }
 
 export function setMainMode(mode) {
-  const statusBanner =
-    document.getElementById("status-banner");
-
   const currentPanel =
     document.getElementById("current-panel");
+
+  if (!currentPanel) {
+    return;
+  }
+
+  let statusBanner =
+    document.getElementById("status-banner");
+
+  if (!statusBanner) {
+    statusBanner =
+      document.createElement("div");
+
+    statusBanner.id =
+      "status-banner";
+
+    statusBanner.className =
+      "status-banner";
+
+    currentPanel.prepend(statusBanner);
+  }
 
   if (mode === "eew-warning") {
     statusBanner.textContent =

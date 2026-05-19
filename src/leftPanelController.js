@@ -82,8 +82,9 @@ export function renderLeftPanel() {
 }
 
 function renderEarthquakeTab() {
+  showEarthquakePanels();
+
   restoreCurrentPanel();
-  showBottomPanel();
 
   if (latestEewInfo) {
     showEEW(
@@ -125,6 +126,8 @@ function showBottomPanel() {
 }
 
 function renderKyoshinTab() {
+  showEarthquakePanels();
+
   restoreCurrentPanel();
 
   if (latestEewInfo) {
@@ -142,7 +145,7 @@ function renderKyoshinTab() {
 }
 
 function renderTsunamiTab() {
-  clearBottomPanel();
+  hideEarthquakePanels();
 
   if (
     latestTsunamiInfo &&
@@ -206,4 +209,56 @@ function showKyoshinDetectPlaceholder() {
       </div>
     </div>
   `;
+}
+
+function hideEarthquakePanels() {
+  const historyPanel =
+    document.getElementById("history-panel");
+
+  const pointsPanel =
+    document.getElementById("points-panel");
+
+  const statusBanner =
+    document.getElementById("status-banner");
+
+  if (historyPanel) {
+    historyPanel.style.display =
+      "none";
+  }
+
+  if (pointsPanel) {
+    pointsPanel.style.display =
+      "none";
+  }
+
+  if (statusBanner) {
+    statusBanner.style.display =
+      "none";
+  }
+}
+
+function showEarthquakePanels() {
+  const historyPanel =
+    document.getElementById("history-panel");
+
+  const pointsPanel =
+    document.getElementById("points-panel");
+
+  const statusBanner =
+    document.getElementById("status-banner");
+
+  if (historyPanel) {
+    historyPanel.style.display =
+      "";
+  }
+
+  if (pointsPanel) {
+    pointsPanel.style.display =
+      "";
+  }
+
+  if (statusBanner) {
+    statusBanner.style.display =
+      "";
+  }
 }

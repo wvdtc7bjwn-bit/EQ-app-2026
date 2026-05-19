@@ -21,11 +21,6 @@ import {
   updateMainTabUI
 } from "./mainTabs.js";
 
-import {
-  showTsunamiPanel,
-  showNoTsunamiPanel,
-  restoreCurrentPanel
-} from "./tsunamiPanel.js";
 
 import {
   setLeftPanelTab,
@@ -49,7 +44,6 @@ import {
 
 let currentMainTab = "earthquake";
 
-let latestTsunamiInfo = null;
 let eewEndTimer = null;
 let eewTimeoutTimer = null;
 let temporaryInfoTimer = null;
@@ -104,8 +98,7 @@ function applyMainTab(tab) {
     setKyoshinDisplayMode("normal");
   }
   else if (tab === "tsunami") {
-    setMainMode("tsunami");
-    setKyoshinDisplayMode("active-only");
+  setKyoshinDisplayMode("active-only");
   }
 }
 
@@ -172,19 +165,6 @@ setupPanelToggle();
 
 setupMainTabs(tab => {
   applyMainTab(tab);
-
-  if (tab === "tsunami") {
-    if (
-      latestTsunamiInfo &&
-      Array.isArray(latestTsunamiInfo.areas) &&
-      latestTsunamiInfo.areas.length > 0
-    ) {
-      showTsunamiPanel(latestTsunamiInfo);
-    }
-    else {
-      showNoTsunamiPanel();
-    }
-  }
 });
 
 applyMainTab("earthquake");
@@ -301,11 +281,9 @@ socket.on("kyoshin", (data) => {
 socket.on("tsunami", data => {
   console.log("津波情報受信:", data);
 
-  latestTsunamiInfo = data;
-
-  applyMainTab("tsunami");
-
   setLatestTsunamiInfo(data);
+
+   applyMainTab("tsunami");
 
   updateTsunamiAreas(
     data.areas ?? []
