@@ -900,7 +900,7 @@ function drawIntensityAreaLabel(
   text.setAttribute("text-anchor", "middle");
   text.setAttribute("dominant-baseline", "middle");
   text.setAttribute("font-size", "13");
-  text.setAttribute("font-weight", "900");
+  text.setAttribute("font-weight", "700");
   text.setAttribute("fill", "#111827");
   text.setAttribute("stroke", "rgba(255,255,255,0.45)");
   text.setAttribute("stroke-width", "0.45");
@@ -1004,7 +1004,7 @@ export function updateSvgHypocenter(
 
   cross.setAttribute(
     "font-weight",
-    "900"
+    "700"
   );
 
   cross.setAttribute(

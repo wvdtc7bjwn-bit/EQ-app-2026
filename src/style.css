@@ -1,3 +1,32 @@
+:root {
+  --app-font:
+    "Noto Sans JP",
+    "Hiragino Sans",
+    "Yu Gothic UI",
+    "Yu Gothic",
+    "Meiryo",
+    sans-serif;
+
+  --font-normal: 700;
+  --font-bold: 800;
+  --font-heavy: 900;
+}
+
+html,
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--app-font);
+  font-weight: var(--font-normal);
+  letter-spacing: 0.01em;
+}
+
+* {
+  font-family: inherit;
+}
+
 #main-tabs {
   position: absolute;
 
@@ -90,4 +119,237 @@
 #tab-tsunami .tab-icon {
   width: 27px;
   height: 27px;
+}
+
+.tsunami-panel {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.tsunami-header {
+  padding: 10px 12px;
+  border-radius: 10px 10px 0 0;
+  text-align: center;
+  font-size: 20px;
+  color: #101827;
+}
+
+.tsunami-header.major {
+  background: #7b2cff;
+  color: white;
+}
+
+.tsunami-header.warning {
+  background: #e82424;
+  color: white;
+}
+
+.tsunami-header.advisory {
+  background: #e8e84a;
+}
+
+.tsunami-header.forecast {
+  background: #90ccff;
+}
+
+.tsunami-origin {
+  padding: 12px 14px;
+  background: rgba(16, 28, 48, 0.94);
+}
+
+.tsunami-time {
+  color: #c8d4e6;
+  font-size: 14px;
+}
+
+.tsunami-place {
+  margin-top: 4px;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.tsunami-quake-box {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(70, 90, 130, 0.72);
+}
+
+.tsunami-quake-box div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 6px 0;
+}
+
+.tsunami-quake-box span {
+  font-size: 17px;
+}
+
+.tsunami-quake-box strong {
+  font-size: 30px;
+}
+
+.tsunami-section {
+  margin-top: 14px;
+  padding-left: 12px;
+  border-left: 12px solid;
+}
+
+.tsunami-section.major {
+  border-color: #7b2cff;
+}
+
+.tsunami-section.warning {
+  border-color: #ff2d2d;
+}
+
+.tsunami-section.advisory {
+  border-color: #ffd400;
+}
+
+.tsunami-section.forecast {
+  border-color: #90ccff;
+}
+
+.tsunami-section-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.tsunami-badge {
+  min-width: 48px;
+  padding: 6px 8px;
+  border-radius: 9px;
+  text-align: center;
+  color: #101827;
+}
+
+.tsunami-badge.major {
+  background: #7b2cff;
+  color: white;
+}
+
+.tsunami-badge.warning {
+  background: #ff2d2d;
+  color: white;
+}
+
+.tsunami-badge.advisory {
+  background: #ffd400;
+}
+
+.tsunami-badge.forecast {
+  background: #90ccff;
+}
+
+.tsunami-area-row {
+  margin: 8px 0;
+}
+
+.tsunami-area-name {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.tsunami-area-status {
+  margin-top: 4px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(80, 100, 145, 0.78);
+  color: #e8eefc;
+  font-size: 14px;
+  text-align: center;
+}
+
+.tsunami-area-status span {
+  margin-left: 8px;
+  color: #ffffff;
+}
+
+.tsunami-observation-section {
+  margin-top: 16px;
+  padding-left: 12px;
+  border-left: 12px solid #4aa3ff;
+}
+
+.tsunami-observation-title {
+  font-size: 24px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.tsunami-observation-row {
+  margin: 8px 0;
+}
+
+.tsunami-panel,
+.tsunami-panel * {
+  font-family: var(--app-font) !important;
+  font-weight: var(--font-bold) !important;
+  letter-spacing: 0.01em;
+}
+
+.tsunami-header {
+  font-weight: var(--font-heavy) !important;
+}
+
+.tsunami-place {
+  font-weight: var(--font-heavy) !important;
+}
+
+.tsunami-quake-box span,
+.tsunami-quake-box strong {
+  font-weight: var(--font-heavy) !important;
+}
+
+.tsunami-section-title,
+.tsunami-badge,
+.tsunami-area-name,
+.tsunami-area-status {
+  font-weight: var(--font-heavy) !important;
+}
+
+.left-panel,
+.left-panel *,
+.side-panel,
+.side-panel *,
+.current-panel,
+.current-panel *,
+.history-panel,
+.history-panel *,
+.history-card,
+.history-card *,
+.eew-panel,
+.eew-panel *,
+.info-panel,
+.info-panel * {
+  font-family: var(--app-font) !important;
+}
+
+.tsunami-panel {
+  width: 100%;
+}
+
+.tsunami-origin {
+  padding-left: 18px;
+  padding-right: 18px;
+}
+
+.tsunami-quake-box {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.current-panel:has(.tsunami-panel) {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.current-panel:has(.tsunami-panel) .tsunami-panel {
+  width: 100%;
 }

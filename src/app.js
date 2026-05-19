@@ -22,6 +22,10 @@ import {
 } from "./mainTabs.js";
 
 import {
+  showTsunamiPanel
+} from "./tsunamiPanel.js";
+
+import {
   initializeSvgMap,
   updateSvgHypocenter,
   updateSvgIntensityPoints,
@@ -274,17 +278,19 @@ socket.on("kyoshin", (data) => {
 });
 
 socket.on("tsunami", data => {
-  console.log(
-    "津波情報受信:",
-    data
-  );
+  console.log("津波情報受信:", data);
 
   applyMainTab("tsunami");
+
+  setMainMode("tsunami");
+
+  showTsunamiPanel(data);
 
   updateTsunamiAreas(
     data.areas ?? []
   );
 });
+
 socket.on("dmdata-telegram", (telegram) => {
   console.log("その他dmdata受信:");
   console.log(telegram);

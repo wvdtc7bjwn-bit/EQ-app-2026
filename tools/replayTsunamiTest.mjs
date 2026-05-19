@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 
 const raw =
   fs.readFileSync(
-    "./sample-data/tsunami/tsunami-test.json",
+    "./sample-data/tsunami/tsunami-vtse51-observation-test.json",
     "utf-8"
   );
 
