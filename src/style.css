@@ -386,3 +386,23 @@ textarea {
   color: #ffffff;
   line-height: 1.5;
 }
+
+.kyoshin-detect-empty {
+  margin: 12px;
+  padding: 18px 16px;
+  border-radius: 14px;
+  background: rgba(15, 28, 48, 0.92);
+  color: #ffffff;
+}
+
+.kyoshin-detect-title {
+  font-size: 22px;
+  font-weight: 900;
+  margin-bottom: 8px;
+}
+
+.kyoshin-detect-message {
+  font-size: 15px;
+  font-weight: 800;
+  color: #b9c7df;
+}

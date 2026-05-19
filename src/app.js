@@ -28,6 +28,14 @@ import {
 } from "./tsunamiPanel.js";
 
 import {
+  setLeftPanelTab,
+  setLatestEarthquakeInfo,
+  setLatestEewInfo,
+  clearLatestEewInfo,
+  setLatestTsunamiInfo
+} from "./leftPanelController.js";
+
+import {
   initializeSvgMap,
   updateSvgHypocenter,
   updateSvgIntensityPoints,
@@ -66,6 +74,8 @@ function endEewMode(reason = "unknown") {
   clearSvgEewWaves();
 
   latestEewData = null;
+
+  clearLatestEewInfo();
 }
 
 function hasCoordinate(data) {
@@ -84,21 +94,17 @@ function applyMainTab(tab) {
 
   console.log("タブ切替:", tab);
 
+  setLeftPanelTab(tab);
+
   if (tab === "earthquake") {
-  restoreCurrentPanel();
-
-  setMainMode("earthquake");
-
-  setKyoshinDisplayMode("active-only");
- }
+    setMainMode("earthquake");
+    setKyoshinDisplayMode("active-only");
+  }
   else if (tab === "kyoshin") {
-  restoreCurrentPanel();
-
-  setKyoshinDisplayMode("normal");
+    setKyoshinDisplayMode("normal");
   }
   else if (tab === "tsunami") {
-  restoreCurrentPanel();
-
+    setMainMode("tsunami");
     setKyoshinDisplayMode("active-only");
   }
 }
@@ -201,16 +207,7 @@ socket.on("earthquake", (data) => {
 
   applyMainTab("earthquake");
 
-  setMainMode("earthquake");
-  setSubPanel("history");
-
-  updateCurrentInfo(data);
-  updateTime();
-
-  updatePoints(
-    data.points,
-    data.scaleList
-  );
+  setLatestEarthquakeInfo(data);
 
   updateSvgIntensityPoints(
     data.points,
@@ -218,10 +215,8 @@ socket.on("earthquake", (data) => {
   );
 
   updateIntensityAreas(
-  data.regions ?? []
+    data.regions ?? []
   );
-  
-  addHistory(data);
 
   if (hasCoordinate(data)) {
     updateSvgHypocenter(
@@ -238,6 +233,8 @@ socket.on("eew", (data) => {
   applyMainTab("kyoshin");
 
   latestEewData = data;
+
+  setLatestEewInfo(data);
 
   clearEewTimers();
 
@@ -308,9 +305,7 @@ socket.on("tsunami", data => {
 
   applyMainTab("tsunami");
 
-  setMainMode("tsunami");
-
-  showTsunamiPanel(data);
+  setLatestTsunamiInfo(data);
 
   updateTsunamiAreas(
     data.areas ?? []
