@@ -20,7 +20,13 @@ import {
   showKyoshinView
 } from "./tsunamiPanel.js";
 
-let currentTab = "earthquake";
+const TAB = {
+  EARTHQUAKE: "earthquake",
+  KYOSHIN: "kyoshin",
+  TSUNAMI: "tsunami"
+};
+
+let currentTab = TAB.EARTHQUAKE;
 
 let latestEarthquakeInfo = null;
 let latestEewInfo = null;
@@ -35,7 +41,7 @@ export function setLatestEarthquakeInfo(data) {
   latestEarthquakeInfo = data;
   addHistory(data);
 
-  if (currentTab === "earthquake") {
+  if (currentTab === TAB.EARTHQUAKE) {
     renderEarthquakeTab();
   }
 }
@@ -43,10 +49,7 @@ export function setLatestEarthquakeInfo(data) {
 export function setLatestEewInfo(data) {
   latestEewInfo = data;
 
-  if (
-    currentTab === "earthquake" ||
-    currentTab === "kyoshin"
-  ) {
+  if (isEewVisibleTab()) {
     renderLeftPanel();
   }
 }
@@ -54,10 +57,7 @@ export function setLatestEewInfo(data) {
 export function clearLatestEewInfo() {
   latestEewInfo = null;
 
-  if (
-    currentTab === "earthquake" ||
-    currentTab === "kyoshin"
-  ) {
+  if (isEewVisibleTab()) {
     renderLeftPanel();
   }
 }
@@ -65,31 +65,39 @@ export function clearLatestEewInfo() {
 export function setLatestTsunamiInfo(data) {
   latestTsunamiInfo = data;
 
-  if (currentTab === "tsunami") {
+  if (currentTab === TAB.TSUNAMI) {
     renderTsunamiTab();
   }
 }
 
 export function renderLeftPanel() {
-  if (currentTab === "earthquake") {
-    renderEarthquakeTab();
-    return;
-  }
+  switch (currentTab) {
+    case TAB.EARTHQUAKE:
+      renderEarthquakeTab();
+      break;
 
-  if (currentTab === "kyoshin") {
-    renderKyoshinTab();
-    return;
-  }
+    case TAB.KYOSHIN:
+      renderKyoshinTab();
+      break;
 
-  if (currentTab === "tsunami") {
-    renderTsunamiTab();
+    case TAB.TSUNAMI:
+      renderTsunamiTab();
+      break;
+
+    default:
+      renderEarthquakeTab();
+      break;
   }
 }
 
 function renderEarthquakeTab() {
-  showEarthquakePanels();
-  showEarthquakeView();
+  setBottomPanels({
+    history: true,
+    points: true,
+    kyoshinDetect: false
+  });
 
+  showEarthquakeView();
   restoreCurrentPanel();
   setupPanelToggle();
 
@@ -103,23 +111,43 @@ function renderEarthquakeTab() {
     return;
   }
 
-  if (latestEarthquakeInfo) {
-    updateCurrentInfo(latestEarthquakeInfo);
-    updateTime();
-
-    updatePoints(
-      latestEarthquakeInfo.points,
-      latestEarthquakeInfo.scaleList
-    );
-  }
+  renderLatestEarthquakeInfo();
 }
 
 function renderKyoshinTab() {
-  hideEarthquakePanels();
-  showKyoshinView();
+  setBottomPanels({
+    history: false,
+    points: false,
+    kyoshinDetect: true
+  });
 
+  showKyoshinView();
   renderKyoshinEEWPanel();
-  showKyoshinDetectPlaceholder();
+}
+
+function renderTsunamiTab() {
+  setBottomPanels({
+    history: false,
+    points: false,
+    kyoshinDetect: false
+  });
+
+  showTsunamiView();
+  renderTsunamiInfo();
+}
+
+function renderLatestEarthquakeInfo() {
+  if (!latestEarthquakeInfo) {
+    return;
+  }
+
+  updateCurrentInfo(latestEarthquakeInfo);
+  updateTime();
+
+  updatePoints(
+    latestEarthquakeInfo.points,
+    latestEarthquakeInfo.scaleList
+  );
 }
 
 function renderKyoshinEEWPanel() {
@@ -138,10 +166,7 @@ function renderKyoshinEEWPanel() {
   );
 }
 
-function renderTsunamiTab() {
-  hideEarthquakePanels();
-  showTsunamiView();
-
+function renderTsunamiInfo() {
   if (
     latestTsunamiInfo &&
     Array.isArray(latestTsunamiInfo.areas) &&
@@ -154,54 +179,40 @@ function renderTsunamiTab() {
   }
 }
 
-function showKyoshinDetectPlaceholder() {
-  const panel = document.getElementById("kyoshin-detect-panel");
+function setBottomPanels({
+  history = false,
+  points = false,
+  kyoshinDetect = false
+}) {
+  setPanelVisible("history-panel", history);
+  setPanelVisible("points-panel", points);
+  setPanelVisible("kyoshin-detect-panel", kyoshinDetect);
+
+  if (!points) {
+    document.getElementById("points-panel")?.classList.add("hidden");
+  }
+}
+
+function setPanelVisible(id, visible) {
+  const panel = document.getElementById(id);
 
   if (!panel) {
     return;
   }
 
-  panel.classList.remove("hidden");
-}
+  panel.style.display = visible ? "" : "none";
 
-function hideEarthquakePanels() {
-  const historyPanel = document.getElementById("history-panel");
-  const pointsPanel = document.getElementById("points-panel");
-  const kyoshinPanel = document.getElementById("kyoshin-detect-panel");
-
-  if (historyPanel) {
-    historyPanel.style.display = "none";
+  if (visible) {
+    panel.classList.remove("hidden");
   }
-
-  if (pointsPanel) {
-    pointsPanel.style.display = "none";
-    pointsPanel.classList.add("hidden");
-  }
-
-  if (kyoshinPanel) {
-    kyoshinPanel.classList.add("hidden");
+  else {
+    panel.classList.add("hidden");
   }
 }
 
-function showEarthquakePanels() {
-  const historyPanel = document.getElementById("history-panel");
-  const pointsPanel = document.getElementById("points-panel");
-  const statusBanner = document.getElementById("status-banner");
-  const kyoshinPanel = document.getElementById("kyoshin-detect-panel");
-
-  if (historyPanel) {
-    historyPanel.style.display = "";
-  }
-
-  if (pointsPanel) {
-    pointsPanel.style.display = "";
-  }
-
-  if (statusBanner) {
-    statusBanner.style.display = "";
-  }
-
-  if (kyoshinPanel) {
-    kyoshinPanel.classList.add("hidden");
-  }
+function isEewVisibleTab() {
+  return (
+    currentTab === TAB.EARTHQUAKE ||
+    currentTab === TAB.KYOSHIN
+  );
 }
