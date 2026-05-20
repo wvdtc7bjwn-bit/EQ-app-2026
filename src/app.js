@@ -17,6 +17,10 @@ import {
 } from "./history.js";
 
 import {
+  loadEarthquakeHistory
+} from "./historyLoader.js";
+
+import {
   setupMainTabs,
   updateMainTabUI
 } from "./mainTabs.js";
@@ -221,10 +225,13 @@ setupMainTabs(tab => {
 });
 
 applyMainTab("earthquake");
+loadEarthquakeHistory(11);
 
 socket.on("earthquake", (data) => {
   console.log("地震データ受信:");
   console.log(data);
+
+  addHistory(data);
 
   if (
     data.telegramType === "VXSE51" ||
