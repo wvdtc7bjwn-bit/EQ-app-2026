@@ -13,10 +13,6 @@ import {
 } from "./ui.js";
 
 import {
-  addHistory
-} from "./history.js";
-
-import {
   loadEarthquakeHistory
 } from "./historyLoader.js";
 
@@ -190,6 +186,8 @@ function showTemporaryEarthquakeInfo(data) {
 
   setMainMode("earthquake");
 
+  setLatestEarthquakeInfo(mergedData);
+
   updateCurrentInfo(mergedData);
   updateTime();
 
@@ -230,8 +228,6 @@ loadEarthquakeHistory(11);
 socket.on("earthquake", (data) => {
   console.log("地震データ受信:");
   console.log(data);
-
-  addHistory(data);
 
   if (
     data.telegramType === "VXSE51" ||
