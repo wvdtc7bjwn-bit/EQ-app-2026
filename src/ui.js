@@ -375,7 +375,24 @@ function updateLongPeriodBox(
   }
 }
 
+let mapClockTimer = null;
+
 export function updateTime() {
+  updateMapClock();
+  startMapClock();
+}
+
+function startMapClock() {
+  if (mapClockTimer) {
+    return;
+  }
+
+  mapClockTimer = setInterval(() => {
+    updateMapClock();
+  }, 1000);
+}
+
+function updateMapClock() {
   const updateTime = document.getElementById("update-time");
 
   if (!updateTime) {
@@ -383,7 +400,13 @@ export function updateTime() {
   }
 
   const now = new Date();
-  updateTime.textContent = `${now.toLocaleString("ja-JP")} 更新`;
+
+  updateTime.textContent =
+    `${now.toLocaleTimeString("ja-JP", {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit"
+    })}`;
 }
 
 export function updatePoints(points, scaleList) {

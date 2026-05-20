@@ -217,6 +217,7 @@ function showTemporaryEarthquakeInfo(data) {
 
 initializeSvgMap();
 setupPanelToggle();
+updateTime();
 
 setupMainTabs(tab => {
   applyMainTab(tab);
