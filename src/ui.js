@@ -531,8 +531,16 @@ export function setupPanelToggle() {
       return;
     }
 
-    pointsPanel.classList.remove("hidden");
-    historyPanel.classList.add("hidden");
+    const isPointsVisible = !pointsPanel.classList.contains("hidden");
+
+    if (isPointsVisible) {
+      pointsPanel.classList.add("hidden");
+      historyPanel.classList.remove("hidden");
+    }
+    else {
+      pointsPanel.classList.remove("hidden");
+      historyPanel.classList.add("hidden");
+    }
   });
 
   panelToggleInitialized = true;
