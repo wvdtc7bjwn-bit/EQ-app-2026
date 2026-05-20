@@ -517,6 +517,9 @@ export function setupPanelToggle() {
     return;
   }
 
+  pointsPanel.classList.add("hidden");
+  historyPanel.classList.remove("hidden");
+
   currentPanel.addEventListener("click", event => {
     if (event.target.closest("#tsunami-view")) {
       return;
@@ -528,8 +531,8 @@ export function setupPanelToggle() {
       return;
     }
 
-    pointsPanel.classList.toggle("hidden");
-    historyPanel.classList.toggle("hidden");
+    pointsPanel.classList.remove("hidden");
+    historyPanel.classList.add("hidden");
   });
 
   panelToggleInitialized = true;
