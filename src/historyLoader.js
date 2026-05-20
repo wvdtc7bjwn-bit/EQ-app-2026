@@ -2,6 +2,10 @@ import {
   addHistory
 } from "./history.js";
 
+import {
+  setLatestEarthquakeInfo
+} from "./leftPanelController.js";
+
 function normalizeHistoryItem(item) {
   return {
     eventId: item.event_id,
@@ -21,7 +25,7 @@ function normalizeHistoryItem(item) {
 
 export async function loadEarthquakeHistory(limit = 11) {
   try {
-    const response = await fetch(`/api/history?limit=${limit}`);
+    const response = await fetch(`/api/history?limit=${limit + 1}`);
 
     if (!response.ok) {
       console.warn("地震履歴API取得失敗:", response.status);
@@ -36,16 +40,22 @@ export async function loadEarthquakeHistory(limit = 11) {
     }
 
     const items = Array.isArray(data.items)
-      ? data.items
+      ? data.items.map(normalizeHistoryItem)
       : [];
 
-    items
-      .slice()
+    if (items.length === 0) {
+      return;
+    }
+
+    const [latest, ...historyItems] = items;
+
+    setLatestEarthquakeInfo(latest);
+
+    historyItems
+      .slice(0, limit)
       .reverse()
       .forEach(item => {
-        addHistory(
-          normalizeHistoryItem(item)
-        );
+        addHistory(item);
       });
   }
   catch (error) {
