@@ -19,8 +19,51 @@ function normalizeHistoryItem(item) {
     scale: item.max_scale ?? 0,
     longPeriodIntensity: item.long_period_intensity ?? null,
     latitude: item.latitude ?? null,
+    longitude: item.longitude ?? null,
+    points: [],
+    scaleList: {}
+  };
+}
+
+function normalizeStationItem(item) {
+  return {
+    code: item.station_code,
+    name: item.station_name,
+    intensity: item.intensity ?? "-",
+    scale: item.scale ?? 0,
+    latitude: item.latitude ?? null,
     longitude: item.longitude ?? null
   };
+}
+
+async function loadStationIntensities(eventId) {
+  if (!eventId) {
+    return [];
+  }
+
+  try {
+    const response = await fetch(
+      `/api/history/${encodeURIComponent(eventId)}/stations`
+    );
+
+    if (!response.ok) {
+      console.warn("観測点震度API取得失敗:", response.status);
+      return [];
+    }
+
+    const data = await response.json();
+
+    if (!data.enabled || !Array.isArray(data.items)) {
+      return [];
+    }
+
+    return data.items.map(normalizeStationItem);
+  }
+  catch (error) {
+    console.warn("観測点震度読み込み失敗:");
+    console.warn(error);
+    return [];
+  }
 }
 
 export async function loadEarthquakeHistory(limit = 11) {
@@ -48,6 +91,8 @@ export async function loadEarthquakeHistory(limit = 11) {
     }
 
     const [latest, ...historyItems] = items;
+
+    latest.points = await loadStationIntensities(latest.eventId);
 
     setLatestEarthquakeInfo(latest);
 
