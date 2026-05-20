@@ -19,6 +19,10 @@ import {
   showKyoshinView
 } from "./tsunamiPanel.js";
 
+import {
+  getIntensityColor
+} from "./earthquake.js";
+
 let currentTab = "earthquake";
 
 let latestEarthquakeInfo = null;
@@ -139,20 +143,60 @@ function renderKyoshinEEWPanel() {
     return;
   }
 
+  const reportText = latestEewInfo.reportNumber
+    ? ` #${latestEewInfo.reportNumber}`
+    : "";
+
+  const statusText = latestEewInfo.isWarning
+    ? `緊急地震速報　警報${reportText}`
+    : `緊急地震速報　予報${reportText}`;
+
+  const statusStyle = latestEewInfo.isWarning
+    ? "background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%); color: white;"
+    : "background: linear-gradient(180deg, #d9c55f 0%, #b8942f 100%); color: #111;";
+
   panel.innerHTML = `
-    <div class="detail-box">
-      <div style="font-size: 18px; font-weight: 800; margin-bottom: 12px; color: #f5df8a;">
-        ${latestEewInfo.isWarning ? "緊急地震速報（警報）" : "緊急地震速報（予報）"}
+    <div class="status-banner" style="${statusStyle}">
+      ${statusText}
+    </div>
+
+    <div class="quake-info">
+      <div class="kyoshin-eew-area">
+        ${latestEewInfo.place ?? "震源調査中"} <small>で地震</small>
       </div>
 
-      <div style="font-size: 28px; font-weight: 800; line-height: 1.4; margin-bottom: 12px;">
-        ${latestEewInfo.place ?? "震源調査中"}
+      <div class="kyoshin-eew-time">
+        ${formatDisplayTime(latestEewInfo.time)} 発生
       </div>
 
-      <div style="color: #cbd5e0; font-size: 16px; font-weight: 700; line-height: 1.8;">
-        最大震度 ${latestEewInfo.intensity ?? "-"}<br>
-        M${latestEewInfo.magnitude ?? "-"}<br>
-        深さ ${latestEewInfo.depth ?? "-"}km
+      <div class="kyoshin-eew-intensity-box" style="background: ${getIntensityColor(latestEewInfo.scale)};">
+        <div class="intensity-label">
+          推定最大震度
+        </div>
+
+        <div class="kyoshin-eew-intensity-value">
+          ${latestEewInfo.intensity ?? "-"}
+        </div>
+      </div>
+
+      <div class="detail-box">
+        <div class="detail-row">
+          <span>マグニチュード</span>
+          <strong>${formatMagnitude(latestEewInfo.magnitude)}</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>深さ</span>
+          <strong>${formatDepth(latestEewInfo.depth)}</strong>
+        </div>
+      </div>
+
+      <div class="quake-desc" style="color: ${latestEewInfo.isWarning ? "#f5df8a" : "#e2e8f0"};">
+        ${
+          latestEewInfo.isWarning
+            ? "緊急地震速報（警報）発表<br>強い揺れに警戒してください"
+            : "緊急地震速報（予報）発表<br>揺れに注意してください"
+        }
       </div>
     </div>
   `;
@@ -224,4 +268,42 @@ function showEarthquakePanels() {
   if (kyoshinPanel) {
     kyoshinPanel.classList.add("hidden");
   }
+}
+
+function formatMagnitude(magnitude) {
+  if (
+    magnitude === "-" ||
+    magnitude === null ||
+    magnitude === undefined
+  ) {
+    return "-";
+  }
+
+  return magnitude;
+}
+
+function formatDepth(depth) {
+  if (
+    depth === "-" ||
+    depth === null ||
+    depth === undefined
+  ) {
+    return "-";
+  }
+
+  return `${depth}km`;
+}
+
+function formatDisplayTime(timeText) {
+  if (!timeText) {
+    return "--";
+  }
+
+  const date = new Date(timeText);
+
+  if (Number.isNaN(date.getTime())) {
+    return timeText;
+  }
+
+  return date.toLocaleString("ja-JP");
 }
