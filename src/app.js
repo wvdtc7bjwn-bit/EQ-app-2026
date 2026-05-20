@@ -61,6 +61,7 @@ const latestEarthquakeByEventId = new Map();
 function getEarthquakeCacheKey(data) {
   return (
     data.eventId ??
+    data.event_id ??
     data.time ??
     "latest"
   );
@@ -140,23 +141,92 @@ function endEewMode(reason = "unknown") {
 
 function hasCoordinate(data) {
   return (
-    data.latitude !== null &&
-    data.latitude !== undefined &&
-    data.longitude !== null &&
-    data.longitude !== undefined
+    data?.latitude !== null &&
+    data?.latitude !== undefined &&
+    data?.longitude !== null &&
+    data?.longitude !== undefined
   );
 }
 
-function showLatestHypocenter() {
-  if (latestEarthquakeData && hasCoordinate(latestEarthquakeData)) {
+function showEarthquakeOnMap(data) {
+  updateSvgIntensityPoints(
+    data?.points ?? [],
+    data?.scaleList ?? {}
+  );
+
+  if (hasCoordinate(data)) {
     updateSvgHypocenter(
-      latestEarthquakeData.latitude,
-      latestEarthquakeData.longitude
+      data.latitude,
+      data.longitude
     );
   }
 }
 
-function handleHistorySelect(data) {
+function showLatestEarthquakeOnMap() {
+  if (!latestEarthquakeData) {
+    return;
+  }
+
+  showEarthquakeOnMap(latestEarthquakeData);
+}
+
+async function ensureStationPoints(data) {
+  if (!data) {
+    return data;
+  }
+
+  if (Array.isArray(data.points) && data.points.length > 0) {
+    return data;
+  }
+
+  const eventId = getEventId(data);
+
+  if (!eventId) {
+    return data;
+  }
+
+  try {
+    const response = await fetch(
+      `/api/history/${encodeURIComponent(eventId)}/stations`
+    );
+
+    if (!response.ok) {
+      console.warn("履歴観測点震度API取得失敗:", response.status);
+      return data;
+    }
+
+    const stationData = await response.json();
+
+    if (!stationData.enabled || !Array.isArray(stationData.items)) {
+      return data;
+    }
+
+    const points = stationData.items.map(item => ({
+      code: item.station_code,
+      name: item.station_name,
+      intensity: item.intensity ?? "-",
+      scale: item.scale ?? 0,
+      latitude: item.latitude ?? null,
+      longitude: item.longitude ?? null
+    }));
+
+    const merged = {
+      ...data,
+      points
+    };
+
+    latestEarthquakeByEventId.set(eventId, merged);
+
+    return merged;
+  }
+  catch (error) {
+    console.warn("履歴観測点震度読み込み失敗:");
+    console.warn(error);
+    return data;
+  }
+}
+
+async function handleHistorySelect(data) {
   if (currentMainTab !== "earthquake") {
     applyMainTab("earthquake");
   }
@@ -165,18 +235,14 @@ function handleHistorySelect(data) {
 
   if (previewHistoryEventId === eventId) {
     previewHistoryEventId = null;
-    showLatestHypocenter();
+    showLatestEarthquakeOnMap();
     return;
   }
 
-  previewHistoryEventId = eventId;
+  const previewData = await ensureStationPoints(data);
 
-  if (hasCoordinate(data)) {
-    updateSvgHypocenter(
-      data.latitude,
-      data.longitude
-    );
-  }
+  previewHistoryEventId = eventId;
+  showEarthquakeOnMap(previewData);
 }
 
 function applyMainTab(tab) {
@@ -249,17 +315,7 @@ function showTemporaryEarthquakeInfo(data) {
     mergedData.scaleList
   );
 
-  updateSvgIntensityPoints(
-    mergedData.points,
-    mergedData.scaleList
-  );
-
-  if (hasCoordinate(mergedData)) {
-    updateSvgHypocenter(
-      mergedData.latitude,
-      mergedData.longitude
-    );
-  }
+  showEarthquakeOnMap(mergedData);
 
   temporaryInfoTimer =
     setTimeout(() => {
@@ -278,7 +334,11 @@ setupMainTabs(tab => {
 });
 
 applyMainTab("earthquake");
-loadEarthquakeHistory(11);
+loadEarthquakeHistory(11).then(() => {
+  if (!latestEarthquakeData) {
+    latestEarthquakeData = latestEarthquakeByEventId.get("latest") ?? null;
+  }
+});
 
 socket.on("earthquake", (data) => {
   console.log("地震データ受信:");
@@ -305,21 +365,11 @@ socket.on("earthquake", (data) => {
 
   setLatestEarthquakeInfo(mergedData);
 
-  updateSvgIntensityPoints(
-    mergedData.points,
-    mergedData.scaleList
-  );
+  showEarthquakeOnMap(mergedData);
 
   updateIntensityAreas(
     mergedData.regions ?? []
   );
-
-  if (hasCoordinate(mergedData)) {
-    updateSvgHypocenter(
-      mergedData.latitude,
-      mergedData.longitude
-    );
-  }
 });
 
 socket.on("eew", (data) => {
