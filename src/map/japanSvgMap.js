@@ -746,7 +746,7 @@ export function updateSvgIntensityPoints(
       "r",
       getNonScalingSize(
       getPointRadius(scale),
-      1.8,
+      1,
       getPointRadius(scale)
     )
   );
@@ -997,14 +997,15 @@ export function updateSvgHypocenter(
   );
 
   cross.setAttribute(
-    "font-size",
-    getNonScalingSize(48, 18, 48)
+    "stroke-width",
+    getNonScalingSize(0.8, 0.25, 0.8)
   );
 
   cross.setAttribute(
     "font-size",
-    "24"
+   getNonScalingSize(22, 8, 22)
   );
+
 
   cross.setAttribute(
     "font-weight",
