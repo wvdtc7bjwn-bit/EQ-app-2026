@@ -394,25 +394,121 @@ export function updatePoints(points, scaleList) {
   }
 
   pointsDiv.innerHTML = "";
+  pointsDiv.className = "points-list intensity-summary-list";
 
   if (!points || points.length === 0) {
     pointsDiv.textContent = "観測点情報なし";
     return;
   }
 
-  points.forEach(point => {
-    const div = document.createElement("div");
+  const grouped = groupPointsByScale(points);
 
-    const intensity =
-      scaleList?.[point.scale] ??
-      point.intensity ??
-      "-";
+  grouped.forEach(group => {
+    const row = document.createElement("div");
+    row.className = "intensity-summary-row";
 
-    div.textContent = `${point.name ?? point.addr ?? "観測点"}　震度 ${intensity}`;
-    div.style.background = getIntensityColor(point.scale);
+    const badge = document.createElement("div");
+    badge.className = "intensity-summary-badge";
+    badge.textContent = `震度 ${formatPointIntensityLabel(group.intensity)}`;
+    badge.style.background = getIntensityColor(group.scale);
+    badge.style.color = getIntensityTextColor(group.scale);
 
-    pointsDiv.appendChild(div);
+    const body = document.createElement("div");
+    body.className = "intensity-summary-body";
+
+    const prefecture = document.createElement("div");
+    prefecture.className = "intensity-summary-pref";
+    prefecture.textContent = "[観測点]";
+
+    const names = document.createElement("div");
+    names.className = "intensity-summary-names";
+    names.textContent = group.names.join("　");
+
+    body.appendChild(prefecture);
+    body.appendChild(names);
+
+    row.appendChild(badge);
+    row.appendChild(body);
+
+    pointsDiv.appendChild(row);
   });
+}
+
+function groupPointsByScale(points) {
+  const groups = new Map();
+
+  points.forEach(point => {
+    const scale = Number(point.scale ?? convertIntensityToScaleForPoint(point.intensity));
+
+    if (!scale) {
+      return;
+    }
+
+    const intensity = point.intensity ?? formatPointIntensityLabel(scale);
+    const key = String(scale);
+    const name = point.name ?? point.addr ?? "観測点";
+
+    if (!groups.has(key)) {
+      groups.set(key, {
+        scale,
+        intensity,
+        names: []
+      });
+    }
+
+    const group = groups.get(key);
+
+    if (!group.names.includes(name)) {
+      group.names.push(name);
+    }
+  });
+
+  return [...groups.values()]
+    .sort((a, b) => b.scale - a.scale);
+}
+
+function formatPointIntensityLabel(value) {
+  const table = {
+    10: "1",
+    20: "2",
+    30: "3",
+    40: "4",
+    45: "5-",
+    50: "5+",
+    55: "6-",
+    60: "6+",
+    70: "7",
+    "5弱": "5-",
+    "5強": "5+",
+    "6弱": "6-",
+    "6強": "6+"
+  };
+
+  return table[value] ?? String(value ?? "-");
+}
+
+function convertIntensityToScaleForPoint(value) {
+  const table = {
+    "1": 10,
+    "2": 20,
+    "3": 30,
+    "4": 40,
+    "5-": 45,
+    "5弱": 45,
+    "5+": 50,
+    "5強": 50,
+    "6-": 55,
+    "6弱": 55,
+    "6+": 60,
+    "6強": 60,
+    "7": 70
+  };
+
+  return table[value] ?? 0;
+}
+
+function getIntensityTextColor(scale) {
+  return scale >= 45 ? "#ffffff" : "#111827";
 }
 
 export function setMainMode(mode) {
