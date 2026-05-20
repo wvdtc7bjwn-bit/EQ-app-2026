@@ -1,5 +1,9 @@
 const zlib = require("zlib");
 
+const {
+  findStationCoordinate
+} = require("./data/jmaStationCoordinates.js");
+
 function normalizeBody(body, telegram = {}) {
   if (!body) {
     return null;
@@ -238,21 +242,36 @@ function getPointCoordinate(source) {
 function normalizeStationPoint(station, parent = {}) {
   const coordinate = getPointCoordinate(station);
 
-  const latitude = getNumberValue(
-    station?.latitude ??
-    station?.lat ??
-    coordinate?.latitude ??
-    coordinate?.lat
-  );
+  const stationLocation = findStationCoordinate({
+    code: station?.code,
+    name:
+      station?.name ??
+      station?.addr ??
+      station?.address ??
+      parent?.name
+  });
 
-  const longitude = getNumberValue(
-    station?.longitude ??
-    station?.lng ??
-    station?.lon ??
-    coordinate?.longitude ??
-    coordinate?.lng ??
-    coordinate?.lon
-  );
+  const latitude =
+    getNumberValue(
+      station?.latitude ??
+      station?.lat ??
+      coordinate?.latitude ??
+      coordinate?.lat
+    ) ??
+    stationLocation?.latitude ??
+    null;
+
+  const longitude =
+    getNumberValue(
+      station?.longitude ??
+      station?.lng ??
+      station?.lon ??
+      coordinate?.longitude ??
+      coordinate?.lng ??
+      coordinate?.lon
+    ) ??
+    stationLocation?.longitude ??
+    null;
 
   const rawIntensity =
     station?.int ??
@@ -276,6 +295,7 @@ function normalizeStationPoint(station, parent = {}) {
       station?.addr ??
       station?.address ??
       parent?.name ??
+      stationLocation?.name ??
       "観測点",
     latitude,
     longitude,
