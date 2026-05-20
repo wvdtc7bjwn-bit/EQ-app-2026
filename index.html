@@ -56,7 +56,8 @@
 
     .current-panel,
     .history-panel,
-    .points-panel {
+    .points-panel,
+    .kyoshin-detect-panel {
       background: linear-gradient(180deg, #1b2435 0%, #151d2b 100%);
       border-radius: 16px;
       margin-bottom: 18px;
@@ -264,6 +265,48 @@
       color: #07111d;
     }
 
+    .kyoshin-status-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #cbd5e0;
+      margin-bottom: 12px;
+    }
+
+    .kyoshin-empty-message {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 18px 14px;
+      font-size: 18px;
+      font-weight: 800;
+      line-height: 1.5;
+      color: #e2e8f0;
+      text-align: center;
+    }
+
+    .kyoshin-detect-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .kyoshin-detect-row {
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .kyoshin-detect-area {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+
+    .kyoshin-detect-note {
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
     .hidden {
       display: none !important;
     }
@@ -426,7 +469,27 @@
           </div>
         </div>
 
+        <div id="kyoshin-view" class="hidden">
+          <div class="kyoshin-status-title">
+            緊急地震速報
+          </div>
+          <div id="kyoshin-eew-panel"></div>
+        </div>
+
         <div id="tsunami-view" class="hidden"></div>
+      </div>
+
+      <div class="kyoshin-detect-panel hidden" id="kyoshin-detect-panel">
+        <div class="section-title">
+          揺れ検出地域
+        </div>
+
+        <div id="kyoshin-detect-list" class="kyoshin-detect-list">
+          <div class="kyoshin-empty-message">
+            今後開発予定です<br>
+            強い揺れを検知した地域をここに表示します
+          </div>
+        </div>
       </div>
 
       <div class="points-panel hidden" id="points-panel">
