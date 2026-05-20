@@ -36,14 +36,14 @@ textarea {
   display: flex;
   flex-direction: column;
 
-  gap: 12px;
+  gap: 10px;
 
   z-index: 1200;
 }
 
 .main-tab {
-  width: 54px;
-  height: 54px;
+  width: 46px;
+  height: 46px;
 
   border:
     1px solid
@@ -73,9 +73,9 @@ textarea {
   -webkit-backdrop-filter: blur(18px) saturate(180%);
 
   box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.42),
+    0 10px 24px rgba(0, 0, 0, 0.40),
     inset 0 1px 0 rgba(255, 255, 255, 0.32),
-    inset 0 -10px 18px rgba(0, 0, 0, 0.22);
+    inset 0 -8px 14px rgba(0, 0, 0, 0.22);
 
   transition:
     transform 0.14s ease,
@@ -85,7 +85,7 @@ textarea {
 }
 
 .main-tab:hover {
-  transform: scale(1.08);
+  transform: scale(1.07);
   background:
     linear-gradient(
       180deg,
@@ -107,14 +107,14 @@ textarea {
 
   box-shadow:
     0 0 0 1px rgba(255, 255, 255, 0.20),
-    0 0 24px rgba(150, 190, 255, 0.45),
-    0 14px 32px rgba(0, 0, 0, 0.45),
+    0 0 20px rgba(150, 190, 255, 0.42),
+    0 12px 26px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.46);
 }
 
 .tab-icon {
-  width: 25px;
-  height: 25px;
+  width: 21px;
+  height: 21px;
 
   stroke: #f3f7ff;
 
@@ -132,18 +132,18 @@ textarea {
 }
 
 #tab-earthquake .tab-icon {
-  width: 26px;
-  height: 26px;
+  width: 22px;
+  height: 22px;
 }
 
 #tab-kyoshin .tab-icon {
-  width: 29px;
-  height: 29px;
+  width: 25px;
+  height: 25px;
 }
 
 #tab-tsunami .tab-icon {
-  width: 28px;
-  height: 28px;
+  width: 24px;
+  height: 24px;
 }
 
 .tsunami-panel {
