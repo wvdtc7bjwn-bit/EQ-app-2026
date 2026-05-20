@@ -2,7 +2,8 @@ import {
   updateCurrentInfo,
   updateTime,
   updatePoints,
-  showEEW
+  showEEW,
+  setupPanelToggle
 } from "./ui.js";
 
 import {
@@ -85,6 +86,7 @@ function renderEarthquakeTab() {
   showEarthquakePanels();
 
   restoreCurrentPanel();
+  setupPanelToggle();
 
   if (latestEewInfo) {
     showEEW(
@@ -106,29 +108,11 @@ function renderEarthquakeTab() {
   }
 }
 
-function showBottomPanel() {
-  const targets = [
-    document.getElementById("points-list"),
-    document.getElementById("history-list"),
-    document.getElementById("history-panel"),
-    document.querySelector(".points-list"),
-    document.querySelector(".history-list"),
-    document.querySelector(".history-panel")
-  ];
-
-  targets.forEach(target => {
-    if (!target) {
-      return;
-    }
-
-    target.style.display = "";
-  });
-}
-
 function renderKyoshinTab() {
   showEarthquakePanels();
 
   restoreCurrentPanel();
+  setupPanelToggle();
 
   if (latestEewInfo) {
     showEEW(
@@ -157,25 +141,6 @@ function renderTsunamiTab() {
   else {
     showNoTsunamiPanel();
   }
-}
-
-function clearBottomPanel() {
-  const targets = [
-    document.getElementById("points-list"),
-    document.getElementById("history-list"),
-    document.getElementById("history-panel"),
-    document.querySelector(".points-list"),
-    document.querySelector(".history-list"),
-    document.querySelector(".history-panel")
-  ];
-
-  targets.forEach(target => {
-    if (!target) {
-      return;
-    }
-
-    target.innerHTML = "";
-  });
 }
 
 function hideCurrentPanel() {
@@ -212,32 +177,33 @@ function showKyoshinDetectPlaceholder() {
 }
 
 function hideEarthquakePanels() {
+  const currentPanel =
+    document.getElementById("current-panel");
+
   const historyPanel =
     document.getElementById("history-panel");
 
   const pointsPanel =
     document.getElementById("points-panel");
 
-  const statusBanner =
-    document.getElementById("status-banner");
+  if (currentPanel) {
+    currentPanel.style.display = "";
+  }
 
   if (historyPanel) {
-    historyPanel.style.display =
-      "none";
+    historyPanel.style.display = "none";
   }
 
   if (pointsPanel) {
-    pointsPanel.style.display =
-      "none";
-  }
-
-  if (statusBanner) {
-    statusBanner.style.display =
-      "none";
+    pointsPanel.style.display = "none";
+    pointsPanel.classList.add("hidden");
   }
 }
 
 function showEarthquakePanels() {
+  const currentPanel =
+    document.getElementById("current-panel");
+
   const historyPanel =
     document.getElementById("history-panel");
 
@@ -247,18 +213,19 @@ function showEarthquakePanels() {
   const statusBanner =
     document.getElementById("status-banner");
 
+  if (currentPanel) {
+    currentPanel.style.display = "";
+  }
+
   if (historyPanel) {
-    historyPanel.style.display =
-      "";
+    historyPanel.style.display = "";
   }
 
   if (pointsPanel) {
-    pointsPanel.style.display =
-      "";
+    pointsPanel.style.display = "";
   }
 
   if (statusBanner) {
-    statusBanner.style.display =
-      "";
+    statusBanner.style.display = "";
   }
 }
