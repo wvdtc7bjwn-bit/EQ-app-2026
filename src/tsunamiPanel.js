@@ -4,6 +4,14 @@ function getTsunamiView() {
   return document.getElementById("tsunami-view");
 }
 
+function getEarthquakeView() {
+  return document.getElementById("earthquake-view");
+}
+
+function getKyoshinView() {
+  return document.getElementById("kyoshin-view");
+}
+
 export function showNoTsunamiPanel() {
   const tsunamiView = getTsunamiView();
 
@@ -45,29 +53,33 @@ export function showTsunamiPanel(data) {
 }
 
 export function showTsunamiView() {
-  const earthquakeView = document.getElementById("earthquake-view");
+  const earthquakeView = getEarthquakeView();
+  const kyoshinView = getKyoshinView();
   const tsunamiView = getTsunamiView();
 
-  if (earthquakeView) {
-    earthquakeView.classList.add("hidden");
-  }
-
-  if (tsunamiView) {
-    tsunamiView.classList.remove("hidden");
-  }
+  if (earthquakeView) earthquakeView.classList.add("hidden");
+  if (kyoshinView) kyoshinView.classList.add("hidden");
+  if (tsunamiView) tsunamiView.classList.remove("hidden");
 }
 
 export function showEarthquakeView() {
-  const earthquakeView = document.getElementById("earthquake-view");
+  const earthquakeView = getEarthquakeView();
+  const kyoshinView = getKyoshinView();
   const tsunamiView = getTsunamiView();
 
-  if (earthquakeView) {
-    earthquakeView.classList.remove("hidden");
-  }
+  if (earthquakeView) earthquakeView.classList.remove("hidden");
+  if (kyoshinView) kyoshinView.classList.add("hidden");
+  if (tsunamiView) tsunamiView.classList.add("hidden");
+}
 
-  if (tsunamiView) {
-    tsunamiView.classList.add("hidden");
-  }
+export function showKyoshinView() {
+  const earthquakeView = getEarthquakeView();
+  const kyoshinView = getKyoshinView();
+  const tsunamiView = getTsunamiView();
+
+  if (earthquakeView) earthquakeView.classList.add("hidden");
+  if (kyoshinView) kyoshinView.classList.remove("hidden");
+  if (tsunamiView) tsunamiView.classList.add("hidden");
 }
 
 export function restoreCurrentPanel() {
