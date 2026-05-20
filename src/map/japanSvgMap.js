@@ -15,6 +15,11 @@ import {
   tsunamiAreaGeoJson
 } from "./data/tsunamiAreaGeoJson.js";
 
+import {
+  initializeNonScalingMarkers,
+  refreshNonScalingMarkers
+} from "./nonScalingMarkers.js";
+
 let svgRoot = null;
 let mapLayer = null;
 let intensityLayer = null;
@@ -134,8 +139,10 @@ buildIntensityLayer();
 buildHypocenterLayer();
 
 setupSvgInteractions();
+initializeNonScalingMarkers();
 
-  updateViewBox();
+updateViewBox();
+refreshNonScalingMarkers();
 }
 
 function calculateProjectedBounds() {
@@ -792,6 +799,7 @@ export function updateSvgIntensityPoints(
   });
 
   intensityLayer.appendChild(fragment);
+  refreshNonScalingMarkers();
 }
 
 export function updateIntensityAreas(
@@ -1033,6 +1041,8 @@ export function updateSvgHypocenter(
   hypocenterLayer.appendChild(
     cross
   );
+
+   refreshNonScalingMarkers();
 }
 
 function getPointLatitude(point) {
@@ -1240,6 +1250,7 @@ function animateViewBox() {
     ease;
 
   updateViewBox();
+  refreshNonScalingMarkers();
 
   const diff =
     Math.abs(targetViewBox.x - viewBox.x) +
@@ -1259,6 +1270,7 @@ function animateViewBox() {
     };
 
     updateViewBox();
+    refreshNonScalingMarkers();
 
     zoomAnimationId =
       null;
