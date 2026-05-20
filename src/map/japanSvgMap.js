@@ -1828,6 +1828,22 @@ function isKyoshinActiveColor(point) {
   return true;
 }
 
+export function setEarthquakeMarkerVisible(visible) {
+  const display = visible ? "block" : "none";
+
+  if (intensityLayer) {
+    intensityLayer.style.display = display;
+  }
+
+  if (hypocenterLayer) {
+    hypocenterLayer.style.display = display;
+  }
+
+  if (intensityLabelLayer) {
+    intensityLabelLayer.style.display = display;
+  }
+}
+
 export function setKyoshinDisplayMode(mode) {
   kyoshinDisplayMode =
     mode;
