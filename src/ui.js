@@ -4,6 +4,134 @@ import {
 
 let panelToggleInitialized = false;
 
+let earthquakeTsunamiStatus = {
+  text: "津波情報：調査中",
+  background: "#31486d"
+};
+
+export function setEarthquakeTsunamiStatus(data) {
+  earthquakeTsunamiStatus = buildTsunamiStatus(data);
+  renderEarthquakeTsunamiStatus();
+}
+
+function buildTsunamiStatus(data) {
+  if (!data) {
+    return {
+      text: "津波情報：調査中",
+      background: "#31486d"
+    };
+  }
+
+  if (data.isCanceled) {
+    return {
+      text: "津波情報：解除・取消",
+      background: "#475569"
+    };
+  }
+
+  const areas = Array.isArray(data.areas)
+    ? data.areas
+    : [];
+
+  const observations = Array.isArray(data.observations)
+    ? data.observations
+    : [];
+
+  const estimations = Array.isArray(data.estimations)
+    ? data.estimations
+    : [];
+
+  if (
+    areas.length === 0 &&
+    observations.length === 0 &&
+    estimations.length === 0
+  ) {
+    return {
+      text: "津波情報：発表なし",
+      background: "#33445f"
+    };
+  }
+
+  const topKind = getTopTsunamiKind(areas);
+
+  if (topKind.includes("大津波警報")) {
+    return {
+      text: "津波情報：大津波警報",
+      background: "linear-gradient(180deg, #7f1d1d 0%, #450a0a 100%)"
+    };
+  }
+
+  if (topKind.includes("津波警報")) {
+    return {
+      text: "津波情報：津波警報",
+      background: "linear-gradient(180deg, #dc2626 0%, #991b1b 100%)"
+    };
+  }
+
+  if (topKind.includes("津波注意報")) {
+    return {
+      text: "津波情報：津波注意報",
+      background: "linear-gradient(180deg, #f59e0b 0%, #b45309 100%)"
+    };
+  }
+
+  if (topKind.includes("津波予報")) {
+    return {
+      text: "津波情報：津波予報",
+      background: "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)"
+    };
+  }
+
+  if (observations.length > 0) {
+    return {
+      text: "津波情報：津波観測あり",
+      background: "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)"
+    };
+  }
+
+  return {
+    text: "津波情報：発表中",
+    background: "linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%)"
+  };
+}
+
+function getTopTsunamiKind(areas) {
+  if (areas.some(area => area.kind?.includes("大津波警報"))) {
+    return "大津波警報";
+  }
+
+  if (areas.some(area =>
+    !area.kind?.includes("大津波警報") &&
+    area.kind?.includes("津波警報")
+  )) {
+    return "津波警報";
+  }
+
+  if (areas.some(area => area.kind?.includes("津波注意報"))) {
+    return "津波注意報";
+  }
+
+  if (areas.some(area =>
+    area.kind?.includes("津波予報") ||
+    area.kind?.includes("若干")
+  )) {
+    return "津波予報";
+  }
+
+  return "津波情報";
+}
+
+function renderEarthquakeTsunamiStatus() {
+  const tsunamiBox = document.getElementById("tsunami-box");
+
+  if (!tsunamiBox) {
+    return;
+  }
+
+  tsunamiBox.textContent = earthquakeTsunamiStatus.text;
+  tsunamiBox.style.background = earthquakeTsunamiStatus.background;
+}
+
 export function updateCurrentInfo(data) {
   const intensityBox = document.getElementById("intensity-box");
   const intensityValue = document.getElementById("intensity-value");
@@ -45,8 +173,7 @@ export function updateCurrentInfo(data) {
   quakePlace.textContent = data.place ?? "震源調査中";
   magnitudeValue.textContent = formatMagnitude(data.magnitude);
   depthValue.textContent = formatDepth(data.depth);
-  tsunamiBox.textContent = "津波情報・調査中";
-  tsunamiBox.style.background = "#31486d";
+  renderEarthquakeTsunamiStatus();
   quakeDesc.textContent = "";
   quakeDesc.style.color = "#e2e8f0";
 
