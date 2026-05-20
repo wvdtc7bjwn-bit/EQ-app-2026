@@ -13,7 +13,9 @@ import {
 import {
   showTsunamiPanel,
   showNoTsunamiPanel,
-  restoreCurrentPanel
+  restoreCurrentPanel,
+  showTsunamiView,
+  showEarthquakeView
 } from "./tsunamiPanel.js";
 
 let currentTab = "earthquake";
@@ -84,6 +86,7 @@ export function renderLeftPanel() {
 
 function renderEarthquakeTab() {
   showEarthquakePanels();
+  showEarthquakeView();
 
   restoreCurrentPanel();
   setupPanelToggle();
@@ -94,6 +97,7 @@ function renderEarthquakeTab() {
       latestEewInfo.isWarning,
       latestEewInfo.reportNumber
     );
+
     return;
   }
 
@@ -110,6 +114,7 @@ function renderEarthquakeTab() {
 
 function renderKyoshinTab() {
   showEarthquakePanels();
+  showEarthquakeView();
 
   restoreCurrentPanel();
   setupPanelToggle();
@@ -121,15 +126,11 @@ function renderKyoshinTab() {
       latestEewInfo.reportNumber
     );
   }
-  else {
-    hideCurrentPanel();
-  }
-
-  showKyoshinDetectPlaceholder();
 }
 
 function renderTsunamiTab() {
   hideEarthquakePanels();
+  showTsunamiView();
 
   if (
     latestTsunamiInfo &&
@@ -143,52 +144,9 @@ function renderTsunamiTab() {
   }
 }
 
-function hideCurrentPanel() {
-  const currentPanel =
-    document.querySelector(".current-panel") ||
-    document.getElementById("current-panel");
-
-  if (!currentPanel) {
-    return;
-  }
-
-  currentPanel.innerHTML = "";
-}
-
-function showKyoshinDetectPlaceholder() {
-  const pointsList =
-    document.getElementById("points-list");
-
-  if (!pointsList) {
-    return;
-  }
-
-  pointsList.innerHTML = `
-    <div class="kyoshin-detect-empty">
-      <div class="kyoshin-detect-title">
-        揺れ検知情報
-      </div>
-
-      <div class="kyoshin-detect-message">
-        現在、強い揺れは検知されていません
-      </div>
-    </div>
-  `;
-}
-
 function hideEarthquakePanels() {
-  const currentPanel =
-    document.getElementById("current-panel");
-
-  const historyPanel =
-    document.getElementById("history-panel");
-
-  const pointsPanel =
-    document.getElementById("points-panel");
-
-  if (currentPanel) {
-    currentPanel.style.display = "";
-  }
+  const historyPanel = document.getElementById("history-panel");
+  const pointsPanel = document.getElementById("points-panel");
 
   if (historyPanel) {
     historyPanel.style.display = "none";
@@ -201,21 +159,9 @@ function hideEarthquakePanels() {
 }
 
 function showEarthquakePanels() {
-  const currentPanel =
-    document.getElementById("current-panel");
-
-  const historyPanel =
-    document.getElementById("history-panel");
-
-  const pointsPanel =
-    document.getElementById("points-panel");
-
-  const statusBanner =
-    document.getElementById("status-banner");
-
-  if (currentPanel) {
-    currentPanel.style.display = "";
-  }
+  const historyPanel = document.getElementById("history-panel");
+  const pointsPanel = document.getElementById("points-panel");
+  const statusBanner = document.getElementById("status-banner");
 
   if (historyPanel) {
     historyPanel.style.display = "";
