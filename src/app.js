@@ -17,6 +17,10 @@ import {
 } from "./historyLoader.js";
 
 import {
+  setHistorySelectHandler
+} from "./history.js";
+
+import {
   setupMainTabs,
   updateMainTabUI
 } from "./mainTabs.js";
@@ -49,6 +53,8 @@ let eewEndTimer = null;
 let eewTimeoutTimer = null;
 let temporaryInfoTimer = null;
 let latestEewData = null;
+let latestEarthquakeData = null;
+let previewHistoryEventId = null;
 
 const latestEarthquakeByEventId = new Map();
 
@@ -101,6 +107,14 @@ function mergeEarthquakeInfo(data) {
   return merged;
 }
 
+function getEventId(data) {
+  return (
+    data?.eventId ??
+    data?.event_id ??
+    `${data?.time ?? data?.origin_time}-${data?.place ?? ""}`
+  );
+}
+
 function clearEewTimers() {
   if (eewEndTimer) {
     clearTimeout(eewEndTimer);
@@ -131,6 +145,38 @@ function hasCoordinate(data) {
     data.longitude !== null &&
     data.longitude !== undefined
   );
+}
+
+function showLatestHypocenter() {
+  if (latestEarthquakeData && hasCoordinate(latestEarthquakeData)) {
+    updateSvgHypocenter(
+      latestEarthquakeData.latitude,
+      latestEarthquakeData.longitude
+    );
+  }
+}
+
+function handleHistorySelect(data) {
+  if (currentMainTab !== "earthquake") {
+    applyMainTab("earthquake");
+  }
+
+  const eventId = getEventId(data);
+
+  if (previewHistoryEventId === eventId) {
+    previewHistoryEventId = null;
+    showLatestHypocenter();
+    return;
+  }
+
+  previewHistoryEventId = eventId;
+
+  if (hasCoordinate(data)) {
+    updateSvgHypocenter(
+      data.latitude,
+      data.longitude
+    );
+  }
 }
 
 function applyMainTab(tab) {
@@ -190,6 +236,9 @@ function showTemporaryEarthquakeInfo(data) {
 
   setMainMode("earthquake");
 
+  latestEarthquakeData = mergedData;
+  previewHistoryEventId = null;
+
   setLatestEarthquakeInfo(mergedData);
 
   updateCurrentInfo(mergedData);
@@ -222,6 +271,7 @@ function showTemporaryEarthquakeInfo(data) {
 initializeSvgMap();
 setupPanelToggle();
 updateTime();
+setHistorySelectHandler(handleHistorySelect);
 
 setupMainTabs(tab => {
   applyMainTab(tab);
@@ -249,6 +299,9 @@ socket.on("earthquake", (data) => {
   }
 
   applyMainTab("earthquake");
+
+  latestEarthquakeData = mergedData;
+  previewHistoryEventId = null;
 
   setLatestEarthquakeInfo(mergedData);
 
