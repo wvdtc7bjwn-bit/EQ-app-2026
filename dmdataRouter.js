@@ -5,6 +5,17 @@ const {
   parseDmdataEew
 } = require("./dmdataParser");
 
+const {
+  saveParsedEarthquake
+} = require("./server/db/saveParsedEarthquake");
+
+function saveEarthquakeInBackground(parsed) {
+  saveParsedEarthquake(parsed).catch(error => {
+    console.error("地震情報DB保存バックグラウンドエラー:");
+    console.error(error);
+  });
+}
+
 function routeTelegram(data, io) {
   const code =
     data?.head?.type;
@@ -26,6 +37,8 @@ function routeTelegram(data, io) {
       console.log("UI変換後:");
       console.log(parsed);
 
+      saveEarthquakeInBackground(parsed);
+
       io.emit("earthquake", parsed);
 
       break;
@@ -40,6 +53,8 @@ function routeTelegram(data, io) {
       console.log("UI変換後:");
       console.log(parsed);
 
+      saveEarthquakeInBackground(parsed);
+
       io.emit("earthquake", parsed);
 
       break;
@@ -53,6 +68,8 @@ function routeTelegram(data, io) {
 
       console.log("UI変換後:");
       console.log(parsed);
+
+      saveEarthquakeInBackground(parsed);
 
       io.emit("earthquake", parsed);
 
