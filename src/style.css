@@ -31,7 +31,7 @@ textarea {
   position: absolute;
 
   top: 18px;
-  left: 310px;
+  left: 328px;
 
   display: flex;
   flex-direction: column;
@@ -144,6 +144,17 @@ textarea {
 #tab-tsunami .tab-icon {
   width: 24px;
   height: 24px;
+}
+
+#sidebar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+#sidebar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
 }
 
 .tsunami-panel {
