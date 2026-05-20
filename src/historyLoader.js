@@ -100,14 +100,14 @@ export async function loadEarthquakeHistory(limit = 11) {
 
     if (!response.ok) {
       console.warn("地震履歴API取得失敗:", response.status);
-      return;
+      return null;
     }
 
     const data = await response.json();
 
     if (!data.enabled) {
       console.log("DB履歴取得は無効です");
-      return;
+      return null;
     }
 
     const items = Array.isArray(data.items)
@@ -115,7 +115,7 @@ export async function loadEarthquakeHistory(limit = 11) {
       : [];
 
     if (items.length === 0) {
-      return;
+      return null;
     }
 
     const [latest, ...historyItems] = items;
@@ -131,9 +131,12 @@ export async function loadEarthquakeHistory(limit = 11) {
       .forEach(item => {
         addHistory(item);
       });
+
+    return latest;
   }
   catch (error) {
     console.warn("地震履歴読み込み失敗:");
     console.warn(error);
+    return null;
   }
 }
