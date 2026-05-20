@@ -25,6 +25,10 @@ import {
   updateMainTabUI
 } from "./mainTabs.js";
 
+import {
+  enableExtendedMapInteractions
+} from "./map/mapInteractionEnhancer.js";
+
 
 import {
   setLeftPanelTab,
@@ -325,6 +329,7 @@ function showTemporaryEarthquakeInfo(data) {
 }
 
 initializeSvgMap();
+enableExtendedMapInteractions();
 setupPanelToggle();
 updateTime();
 setHistorySelectHandler(handleHistorySelect);
