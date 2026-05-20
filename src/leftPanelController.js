@@ -8,7 +8,8 @@ import {
 } from "./ui.js";
 
 import {
-  addHistory
+  addHistory,
+  setLatestHistoryEvent
 } from "./history.js";
 
 import {
@@ -38,8 +39,13 @@ export function setLeftPanelTab(tab) {
 }
 
 export function setLatestEarthquakeInfo(data) {
+  if (latestEarthquakeInfo) {
+    addHistory(latestEarthquakeInfo);
+  }
+
   latestEarthquakeInfo = data;
-  addHistory(data);
+
+  setLatestHistoryEvent(data);
 
   if (currentTab === TAB.EARTHQUAKE) {
     renderEarthquakeTab();
@@ -167,10 +173,27 @@ function renderKyoshinEEWPanel() {
 }
 
 function renderTsunamiInfo() {
-  if (
-    latestTsunamiInfo &&
+  if (!latestTsunamiInfo) {
+    showNoTsunamiPanel();
+    return;
+  }
+
+  const hasAreas =
     Array.isArray(latestTsunamiInfo.areas) &&
-    latestTsunamiInfo.areas.length > 0
+    latestTsunamiInfo.areas.length > 0;
+
+  const hasObservations =
+    Array.isArray(latestTsunamiInfo.observations) &&
+    latestTsunamiInfo.observations.length > 0;
+
+  const hasEstimations =
+    Array.isArray(latestTsunamiInfo.estimations) &&
+    latestTsunamiInfo.estimations.length > 0;
+
+  if (
+    hasAreas ||
+    hasObservations ||
+    hasEstimations
   ) {
     showTsunamiPanel(latestTsunamiInfo);
   }
