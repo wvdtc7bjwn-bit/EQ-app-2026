@@ -6,6 +6,11 @@ import {
   setLatestEarthquakeInfo
 } from "./leftPanelController.js";
 
+import {
+  updateSvgHypocenter,
+  updateSvgIntensityPoints
+} from "./map/japanSvgMap.js";
+
 function normalizeHistoryItem(item) {
   return {
     eventId: item.event_id,
@@ -34,6 +39,15 @@ function normalizeStationItem(item) {
     latitude: item.latitude ?? null,
     longitude: item.longitude ?? null
   };
+}
+
+function hasCoordinate(data) {
+  return (
+    data?.latitude !== null &&
+    data?.latitude !== undefined &&
+    data?.longitude !== null &&
+    data?.longitude !== undefined
+  );
 }
 
 async function loadStationIntensities(eventId) {
@@ -66,6 +80,20 @@ async function loadStationIntensities(eventId) {
   }
 }
 
+function restoreLatestEarthquakeOnMap(latest) {
+  updateSvgIntensityPoints(
+    latest.points,
+    latest.scaleList
+  );
+
+  if (hasCoordinate(latest)) {
+    updateSvgHypocenter(
+      latest.latitude,
+      latest.longitude
+    );
+  }
+}
+
 export async function loadEarthquakeHistory(limit = 11) {
   try {
     const response = await fetch(`/api/history?limit=${limit + 1}`);
@@ -95,6 +123,7 @@ export async function loadEarthquakeHistory(limit = 11) {
     latest.points = await loadStationIntensities(latest.eventId);
 
     setLatestEarthquakeInfo(latest);
+    restoreLatestEarthquakeOnMap(latest);
 
     historyItems
       .slice(0, limit)
