@@ -1,19 +1,18 @@
 let latestTsunamiData = null;
-let originalCurrentPanelHtml = null;
+
+function getTsunamiView() {
+  return document.getElementById("tsunami-view");
+}
 
 export function showNoTsunamiPanel() {
-  const currentPanel =
-    document.querySelector(".current-panel") ||
-    document.getElementById("current-panel");
+  const tsunamiView = getTsunamiView();
 
-  if (!currentPanel) {
+  if (!tsunamiView) {
     console.warn("津波パネル表示先が見つかりません");
     return;
   }
 
-  saveOriginalCurrentPanel(currentPanel);
-
-  currentPanel.innerHTML = `
+  tsunamiView.innerHTML = `
     <div class="tsunami-panel tsunami-empty-panel">
       <div class="tsunami-header forecast">
         津波情報
@@ -35,33 +34,51 @@ export function showNoTsunamiPanel() {
 export function showTsunamiPanel(data) {
   latestTsunamiData = data;
 
-  const currentPanel =
-    document.querySelector(".current-panel") ||
-    document.getElementById("current-panel");
+  const tsunamiView = getTsunamiView();
 
-  if (!currentPanel) {
+  if (!tsunamiView) {
     console.warn("津波パネル表示先が見つかりません");
     return;
   }
 
-  saveOriginalCurrentPanel(currentPanel);
+  tsunamiView.innerHTML = buildTsunamiPanelHtml(data);
+}
 
-  currentPanel.innerHTML =
-    buildTsunamiPanelHtml(data);
+export function showTsunamiView() {
+  const earthquakeView = document.getElementById("earthquake-view");
+  const tsunamiView = getTsunamiView();
+
+  if (earthquakeView) {
+    earthquakeView.classList.add("hidden");
+  }
+
+  if (tsunamiView) {
+    tsunamiView.classList.remove("hidden");
+  }
+}
+
+export function showEarthquakeView() {
+  const earthquakeView = document.getElementById("earthquake-view");
+  const tsunamiView = getTsunamiView();
+
+  if (earthquakeView) {
+    earthquakeView.classList.remove("hidden");
+  }
+
+  if (tsunamiView) {
+    tsunamiView.classList.add("hidden");
+  }
+}
+
+export function restoreCurrentPanel() {
+  showEarthquakeView();
 }
 
 function buildTsunamiPanelHtml(data) {
-  const areas =
-    data.areas ?? [];
-
-  const earthquake =
-    data.earthquake ?? {};
-
-  const grouped =
-    groupTsunamiAreas(areas);
-
-  const topKind =
-    getTopTsunamiKind(areas);
+  const areas = data.areas ?? [];
+  const earthquake = data.earthquake ?? {};
+  const grouped = groupTsunamiAreas(areas);
+  const topKind = getTopTsunamiKind(areas);
 
   return `
     <div class="tsunami-panel">
@@ -96,7 +113,7 @@ function buildTsunamiPanelHtml(data) {
       ${renderSection("advisory", "津波注意報", "1m", grouped.advisory)}
       ${renderSection("forecast", "若干の海面変動", "", grouped.forecast)}
       ${renderObservationSection(data.observations ?? [])}
- </div>
+    </div>
   `;
 }
 
@@ -108,9 +125,7 @@ function renderSection(type, title, badge, areas) {
   return `
     <section class="tsunami-section ${type}">
       <div class="tsunami-section-title">
-        <span class="tsunami-badge ${type}">
-          ${badge}
-        </span>
+        <span class="tsunami-badge ${type}">${badge}</span>
         <span>${title}</span>
       </div>
 
@@ -122,11 +137,8 @@ function renderSection(type, title, badge, areas) {
 }
 
 function renderAreaItem(area, type) {
-  const statusText =
-    getAreaStatusText(area);
-
-  const heightText =
-    getAreaHeightText(area);
+  const statusText = getAreaStatusText(area);
+  const heightText = getAreaHeightText(area);
 
   return `
     <div class="tsunami-area-row ${type}">
@@ -136,46 +148,21 @@ function renderAreaItem(area, type) {
 
       <div class="tsunami-area-status">
         ${statusText}
-        ${
-          heightText
-            ? `<span>${heightText}</span>`
-            : ""
-        }
+        ${heightText ? `<span>${heightText}</span>` : ""}
       </div>
 
-      ${
-        area.stations?.length
-          ? renderForecastStationList(area.stations)
-          : ""
-      }
+      ${area.stations?.length ? renderForecastStationList(area.stations) : ""}
     </div>
   `;
 }
 
 function getAreaStatusText(area) {
-  if (area.condition) {
-    return area.condition;
-  }
-
-  if (area.arrivalTime) {
-    return `${formatShortDateTime(area.arrivalTime)} 到達予想`;
-  }
-
-  if (area.arrivalRevise) {
-    return `到達予想 ${area.arrivalRevise}`;
-  }
-
-  if (area.heightCondition) {
-    return area.heightCondition;
-  }
-
-  if (area.maxHeightCondition) {
-    return area.maxHeightCondition;
-  }
-
-  if (area.heightRevise) {
-    return `高さ ${area.heightRevise}`;
-  }
+  if (area.condition) return area.condition;
+  if (area.arrivalTime) return `${formatShortDateTime(area.arrivalTime)} 到達予想`;
+  if (area.arrivalRevise) return `到達予想 ${area.arrivalRevise}`;
+  if (area.heightCondition) return area.heightCondition;
+  if (area.maxHeightCondition) return area.maxHeightCondition;
+  if (area.heightRevise) return `高さ ${area.heightRevise}`;
 
   if (
     area.kind?.includes("津波予報") ||
@@ -188,9 +175,7 @@ function getAreaStatusText(area) {
 }
 
 function getAreaHeightText(area) {
-  if (area.heightCondition) {
-    return area.heightCondition;
-  }
+  if (area.heightCondition) return area.heightCondition;
 
   if (
     area.height === null ||
@@ -200,13 +185,8 @@ function getAreaHeightText(area) {
     return "";
   }
 
-  const over =
-    area.heightOver
-      ? "超"
-      : "";
-
-  const unit =
-    area.heightUnit ?? "m";
+  const over = area.heightOver ? "超" : "";
+  const unit = area.heightUnit ?? "m";
 
   return `${area.height}${unit}${over}`;
 }
@@ -234,59 +214,38 @@ function renderForecastStationList(stations) {
 }
 
 function formatShortDateTime(time) {
-  if (!time) {
-    return "";
-  }
+  if (!time) return "";
 
-  const date =
-    new Date(time);
+  const date = new Date(time);
 
   if (Number.isNaN(date.getTime())) {
     return time;
   }
 
-  const day =
-    date.getDate();
-
-  const h =
-    String(date.getHours()).padStart(2, "0");
-
-  const m =
-    String(date.getMinutes()).padStart(2, "0");
+  const day = date.getDate();
+  const h = String(date.getHours()).padStart(2, "0");
+  const m = String(date.getMinutes()).padStart(2, "0");
 
   return `${day}日${h}:${m}`;
 }
 
 function groupTsunamiAreas(areas) {
   return {
-    major:
-      areas.filter(a =>
-        a.kind?.includes("大津波警報")
-      ),
-
-    warning:
-      areas.filter(a =>
-        !a.kind?.includes("大津波警報") &&
-        a.kind?.includes("津波警報")
-      ),
-
-    advisory:
-      areas.filter(a =>
-        a.kind?.includes("津波注意報")
-      ),
-
-    forecast:
-      areas.filter(a =>
-        a.kind?.includes("津波予報") ||
-        a.kind?.includes("若干")
-      )
+    major: areas.filter(a => a.kind?.includes("大津波警報")),
+    warning: areas.filter(a =>
+      !a.kind?.includes("大津波警報") &&
+      a.kind?.includes("津波警報")
+    ),
+    advisory: areas.filter(a => a.kind?.includes("津波注意報")),
+    forecast: areas.filter(a =>
+      a.kind?.includes("津波予報") ||
+      a.kind?.includes("若干")
+    )
   };
 }
 
 function getTopTsunamiKind(areas) {
-  if (areas.some(a => a.kind?.includes("大津波警報"))) {
-    return "大津波警報";
-  }
+  if (areas.some(a => a.kind?.includes("大津波警報"))) return "大津波警報";
 
   if (areas.some(a =>
     !a.kind?.includes("大津波警報") &&
@@ -295,9 +254,7 @@ function getTopTsunamiKind(areas) {
     return "津波警報";
   }
 
-  if (areas.some(a => a.kind?.includes("津波注意報"))) {
-    return "津波注意報";
-  }
+  if (areas.some(a => a.kind?.includes("津波注意報"))) return "津波注意報";
 
   if (areas.some(a =>
     a.kind?.includes("津波予報") ||
@@ -310,18 +267,9 @@ function getTopTsunamiKind(areas) {
 }
 
 function getKindClass(kind) {
-  if (kind?.includes("大津波警報")) {
-    return "major";
-  }
-
-  if (kind?.includes("津波警報")) {
-    return "warning";
-  }
-
-  if (kind?.includes("津波注意報")) {
-    return "advisory";
-  }
-
+  if (kind?.includes("大津波警報")) return "major";
+  if (kind?.includes("津波警報")) return "warning";
+  if (kind?.includes("津波注意報")) return "advisory";
   return "forecast";
 }
 
@@ -337,66 +285,25 @@ function formatDepth(depth) {
   return `${depth}km`;
 }
 
-function formatHeight(height) {
-  if (
-    height === null ||
-    height === undefined ||
-    height === ""
-  ) {
-    return "";
-  }
-
-  return `${height}m`;
-}
-
-function formatArrival(time) {
-  if (!time) {
-    return "";
-  }
-
-  const date =
-    new Date(time);
-
-  if (Number.isNaN(date.getTime())) {
-    return time;
-  }
-
-  const h =
-    String(date.getHours()).padStart(2, "0");
-
-  const m =
-    String(date.getMinutes()).padStart(2, "0");
-
-  return `${h}:${m} 到達予想`;
-}
-
 function formatTime(time) {
-  if (!time) {
-    return "--";
-  }
+  if (!time) return "--";
 
-  const date =
-    new Date(time);
+  const date = new Date(time);
 
   if (Number.isNaN(date.getTime())) {
     return time;
   }
 
-  return `${
-    date.getMonth() + 1
-  }月${date.getDate()}日 ${
-    String(date.getHours()).padStart(2, "0")
-  }:${String(date.getMinutes()).padStart(2, "0")}ごろ`;
+  return `${date.getMonth() + 1}月${date.getDate()}日 ${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}ごろ`;
 }
 
 function renderObservationSection(observations) {
-  const stations =
-    observations.flatMap(obs =>
-      (obs.stations ?? []).map(st => ({
-        areaName: obs.name,
-        ...st
-      }))
-    );
+  const stations = observations.flatMap(obs =>
+    (obs.stations ?? []).map(st => ({
+      areaName: obs.name,
+      ...st
+    }))
+  );
 
   if (stations.length === 0) {
     return "";
@@ -424,71 +331,19 @@ function renderObservationSection(observations) {
 }
 
 function getObservedStatusText(st) {
-  if (st.maxStatus) {
-    return st.maxStatus;
-  }
-
-  if (st.maxCondition) {
-    return st.maxCondition;
-  }
+  if (st.maxStatus) return st.maxStatus;
+  if (st.maxCondition) return st.maxCondition;
 
   if (st.maxHeight) {
-    const over =
-      st.maxHeightOver
-        ? "超"
-        : "";
-
-    const time =
-      st.maxDateTime
-        ? `${formatShortDateTime(st.maxDateTime)} `
-        : "";
+    const over = st.maxHeightOver ? "超" : "";
+    const time = st.maxDateTime ? `${formatShortDateTime(st.maxDateTime)} ` : "";
 
     return `最大波 ${time}${st.maxHeight}${st.maxHeightUnit ?? "m"}${over}`;
   }
 
-  if (st.firstCondition) {
-    return st.firstCondition;
-  }
-
-  if (st.firstArrivalTime) {
-    return `第1波 ${formatShortDateTime(st.firstArrivalTime)}`;
-  }
-
-  if (st.firstStatus) {
-    return st.firstStatus;
-  }
+  if (st.firstCondition) return st.firstCondition;
+  if (st.firstArrivalTime) return `第1波 ${formatShortDateTime(st.firstArrivalTime)}`;
+  if (st.firstStatus) return st.firstStatus;
 
   return "観測中";
-}
-
-function saveOriginalCurrentPanel(currentPanel) {
-  if (originalCurrentPanelHtml !== null) {
-    return;
-  }
-
-  if (
-    currentPanel.querySelector(".tsunami-panel")
-  ) {
-    return;
-  }
-
-  originalCurrentPanelHtml =
-    currentPanel.innerHTML;
-}
-
-export function restoreCurrentPanel() {
-  const currentPanel =
-    document.querySelector(".current-panel") ||
-    document.getElementById("current-panel");
-
-  if (!currentPanel) {
-    return;
-  }
-
-  if (originalCurrentPanelHtml === null) {
-    return;
-  }
-
-  currentPanel.innerHTML =
-    originalCurrentPanelHtml;
 }
