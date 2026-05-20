@@ -744,8 +744,12 @@ export function updateSvgIntensityPoints(
 
     circle.setAttribute(
       "r",
+      getNonScalingSize(
+      getPointRadius(scale),
+      1.8,
       getPointRadius(scale)
-    );
+    )
+  );
 
     circle.setAttribute(
       "fill",
@@ -758,8 +762,8 @@ export function updateSvgIntensityPoints(
     );
 
     circle.setAttribute(
-      "stroke-width",
-      "0.7"
+     "stroke-width",
+      getNonScalingSize(0.7, 0.25, 0.7)
     );
 
     circle.setAttribute(
@@ -993,13 +997,13 @@ export function updateSvgHypocenter(
   );
 
   cross.setAttribute(
-    "stroke-width",
-    "2"
+    "font-size",
+    getNonScalingSize(48, 18, 48)
   );
 
   cross.setAttribute(
     "font-size",
-    "48"
+    "24"
   );
 
   cross.setAttribute(
@@ -1159,6 +1163,24 @@ function getTsunamiColor(kind) {
   }
 
   return null;
+}
+
+function getCurrentZoomScale() {
+  if (!viewBox || !svgMapConfig.width) {
+    return 1;
+  }
+
+  return svgMapConfig.width / viewBox.width;
+}
+
+function getNonScalingSize(baseSize, minSize = 1, maxSize = 999) {
+  const zoomScale = getCurrentZoomScale();
+  const size = baseSize / zoomScale;
+
+  return Math.max(
+    minSize,
+    Math.min(maxSize, size)
+  );
 }
 
 function getPointRadius(scale) {
