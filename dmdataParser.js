@@ -14,12 +14,8 @@ function normalizeBody(body, telegram = {}) {
       telegram.encoding === "base64" &&
       telegram.compression === "gzip"
     ) {
-      const buffer =
-        Buffer.from(body, "base64");
-
-      const decoded =
-        zlib.gunzipSync(buffer).toString("utf-8");
-
+      const buffer = Buffer.from(body, "base64");
+      const decoded = zlib.gunzipSync(buffer).toString("utf-8");
       return JSON.parse(decoded);
     }
 
@@ -28,24 +24,16 @@ function normalizeBody(body, telegram = {}) {
   catch (error) {
     console.log("body decode error:");
     console.log(error.message);
-
     return null;
   }
 }
 
 function getReportAndBody(telegram) {
-  const report =
-    normalizeBody(
-      telegram.body,
-      telegram
-    );
+  const report = normalizeBody(telegram.body, telegram);
 
   return {
     report,
-    body:
-      report?.body ??
-      report ??
-      null
+    body: report?.body ?? report ?? null
   };
 }
 
@@ -78,6 +66,8 @@ function getIntensityValue(value) {
       value.to ??
       value.from ??
       value.max ??
+      value.maxInt ??
+      value.intensity ??
       null
     );
   }
@@ -86,8 +76,7 @@ function getIntensityValue(value) {
 }
 
 function convertDmdataIntensityText(maxInt) {
-  const value =
-    getIntensityValue(maxInt);
+  const value = getIntensityValue(maxInt);
 
   const list = {
     "0": "0",
@@ -107,8 +96,7 @@ function convertDmdataIntensityText(maxInt) {
 }
 
 function convertDmdataIntensityToScale(maxInt) {
-  const value =
-    getIntensityValue(maxInt);
+  const value = getIntensityValue(maxInt);
 
   const list = {
     "0": 0,
@@ -127,8 +115,7 @@ function convertDmdataIntensityToScale(maxInt) {
 }
 
 function formatLongPeriodIntensity(value) {
-  const raw =
-    getIntensityValue(value);
+  const raw = getIntensityValue(value);
 
   if (
     raw === null ||
@@ -144,21 +131,11 @@ function formatLongPeriodIntensity(value) {
 
 function getLongPeriodIntensity(intensity) {
   return (
-    formatLongPeriodIntensity(
-      intensity?.maxLgInt
-    ) ??
-    formatLongPeriodIntensity(
-      intensity?.forecastMaxLgInt
-    ) ??
-    formatLongPeriodIntensity(
-      intensity?.maxLongPeriodIntensity
-    ) ??
-    formatLongPeriodIntensity(
-      intensity?.maxLgIntensity
-    ) ??
-    formatLongPeriodIntensity(
-      intensity?.lgCategory
-    ) ??
+    formatLongPeriodIntensity(intensity?.maxLgInt) ??
+    formatLongPeriodIntensity(intensity?.forecastMaxLgInt) ??
+    formatLongPeriodIntensity(intensity?.maxLongPeriodIntensity) ??
+    formatLongPeriodIntensity(intensity?.maxLgIntensity) ??
+    formatLongPeriodIntensity(intensity?.lgCategory) ??
     null
   );
 }
@@ -176,23 +153,19 @@ function getNumberValue(value) {
     return getNumberValue(
       value.value ??
       value.latitude ??
-      value.longitude
+      value.longitude ??
+      value.lat ??
+      value.lng ??
+      value.lon
     );
   }
 
-  const number =
-    Number(value);
+  const number = Number(value);
 
-  return Number.isNaN(number)
-    ? null
-    : number;
+  return Number.isNaN(number) ? null : number;
 }
 
-function getEventId(
-  telegram,
-  report,
-  earthquake
-) {
+function getEventId(telegram, report, earthquake) {
   return (
     earthquake?.eventId ??
     report?.eventId ??
@@ -203,11 +176,7 @@ function getEventId(
   );
 }
 
-function getReportNumber(
-  telegram,
-  report,
-  body
-) {
+function getReportNumber(telegram, report, body) {
   return (
     report?.serialNo ??
     telegram.xmlReport?.head?.serial ??
@@ -243,11 +212,7 @@ function getHypocenterCoordinate(hypocenter) {
   );
 }
 
-function getReportTime(
-  telegram,
-  report,
-  earthquake
-) {
+function getReportTime(telegram, report, earthquake) {
   return (
     earthquake?.originTime ??
     earthquake?.arrivalTime ??
@@ -260,31 +225,34 @@ function getReportTime(
   );
 }
 
-function normalizeStationPoint(station) {
-  const coordinate =
-    station?.coordinate ??
-    station?.point?.coordinate ??
-    station?.location?.coordinate ??
-    station?.position ??
-    null;
+function getPointCoordinate(source) {
+  return (
+    source?.coordinate ??
+    source?.point?.coordinate ??
+    source?.location?.coordinate ??
+    source?.position ??
+    null
+  );
+}
 
-  const latitude =
-    getNumberValue(
-      station?.latitude ??
-      station?.lat ??
-      coordinate?.latitude ??
-      coordinate?.lat
-    );
+function normalizeStationPoint(station, parent = {}) {
+  const coordinate = getPointCoordinate(station);
 
-  const longitude =
-    getNumberValue(
-      station?.longitude ??
-      station?.lng ??
-      station?.lon ??
-      coordinate?.longitude ??
-      coordinate?.lng ??
-      coordinate?.lon
-    );
+  const latitude = getNumberValue(
+    station?.latitude ??
+    station?.lat ??
+    coordinate?.latitude ??
+    coordinate?.lat
+  );
+
+  const longitude = getNumberValue(
+    station?.longitude ??
+    station?.lng ??
+    station?.lon ??
+    coordinate?.longitude ??
+    coordinate?.lng ??
+    coordinate?.lon
+  );
 
   const rawIntensity =
     station?.int ??
@@ -292,6 +260,8 @@ function normalizeStationPoint(station) {
     station?.maxInt ??
     station?.scale ??
     station?.kind?.code ??
+    parent?.maxInt ??
+    parent?.intensity ??
     null;
 
   const scale =
@@ -300,328 +270,192 @@ function normalizeStationPoint(station) {
       : convertDmdataIntensityToScale(rawIntensity);
 
   return {
-    code:
-      station?.code ?? null,
-
+    code: station?.code ?? null,
     name:
       station?.name ??
       station?.addr ??
       station?.address ??
+      parent?.name ??
       "観測点",
-
     latitude,
-
     longitude,
-
     scale,
-
-    intensity:
-      convertDmdataIntensityText(rawIntensity),
-
-    raw:
-      station
+    intensity: convertDmdataIntensityText(rawIntensity),
+    raw: station
   };
 }
 
+function extractNestedStations(node, parent = {}, result = []) {
+  if (!node || typeof node !== "object") {
+    return result;
+  }
+
+  if (Array.isArray(node)) {
+    node.forEach(item => extractNestedStations(item, parent, result));
+    return result;
+  }
+
+  const currentParent = {
+    ...parent,
+    name: node.name ?? node.addr ?? parent.name,
+    maxInt: node.maxInt ?? node.intensity ?? node.int ?? parent.maxInt
+  };
+
+  const coordinate = getPointCoordinate(node);
+  const hasLatLng = getNumberValue(
+    node.latitude ?? node.lat ?? coordinate?.latitude ?? coordinate?.lat
+  ) !== null && getNumberValue(
+    node.longitude ?? node.lng ?? node.lon ?? coordinate?.longitude ?? coordinate?.lng ?? coordinate?.lon
+  ) !== null;
+
+  const hasIntensity = getIntensityValue(
+    node.int ?? node.intensity ?? node.maxInt ?? node.scale ?? node.kind?.code
+  ) !== null;
+
+  if (hasLatLng && hasIntensity) {
+    result.push(normalizeStationPoint(node, currentParent));
+  }
+
+  const childKeys = [
+    "stations",
+    "points",
+    "cities",
+    "city",
+    "wards",
+    "areas",
+    "regions",
+    "prefectures",
+    "items",
+    "observations"
+  ];
+
+  childKeys.forEach(key => {
+    if (node[key]) {
+      extractNestedStations(node[key], currentParent, result);
+    }
+  });
+
+  return result;
+}
+
 function normalizeStations(intensity) {
-  const stations =
+  if (!intensity) {
+    return [];
+  }
+
+  const directStations =
     intensity?.stations ??
     intensity?.points ??
     intensity?.observation?.stations ??
     [];
 
-  if (!Array.isArray(stations)) {
-    return [];
+  const result = [];
+
+  if (Array.isArray(directStations)) {
+    directStations.forEach(station => {
+      result.push(normalizeStationPoint(station));
+    });
   }
 
-  return stations.map(
-    normalizeStationPoint
-  );
+  extractNestedStations(intensity, {}, result);
+
+  const unique = new Map();
+
+  result.forEach(point => {
+    if (
+      point.latitude === null ||
+      point.longitude === null
+    ) {
+      return;
+    }
+
+    const key = `${point.code ?? point.name}-${point.latitude}-${point.longitude}`;
+    unique.set(key, point);
+  });
+
+  return [...unique.values()];
 }
 
 function parseDmdataEarthquake(telegram) {
-  const {
-    report,
-    body
-  } =
-    getReportAndBody(telegram);
+  const { report, body } = getReportAndBody(telegram);
 
-  const earthquake =
-    body?.earthquake;
-
-  const hypocenter =
-    earthquake?.hypocenter;
-
-  const coordinate =
-    getHypocenterCoordinate(
-      hypocenter
-    );
-
-  const intensity =
-    body?.intensity;
-
-  const maxInt =
-    intensity?.maxInt;
+  const earthquake = body?.earthquake;
+  const hypocenter = earthquake?.hypocenter;
+  const coordinate = getHypocenterCoordinate(hypocenter);
+  const intensity = body?.intensity;
+  const maxInt = intensity?.maxInt;
 
   return {
-    eventId:
-      getEventId(
-        telegram,
-        report,
-        earthquake
-      ),
-
-    reportNumber:
-      getReportNumber(
-        telegram,
-        report,
-        body
-      ),
-
-    place:
-      hypocenter?.name ??
-      "震源調査中",
-
-    scale:
-      convertDmdataIntensityToScale(
-        maxInt
-      ),
-
-    intensity:
-      convertDmdataIntensityText(
-        maxInt
-      ),
-
-    longPeriodIntensity:
-      getLongPeriodIntensity(
-        intensity
-      ),
-
-    magnitude:
-      getMagnitudeValue(
-        earthquake,
-        hypocenter
-      ),
-
-    depth:
-      getDepthValue(
-        hypocenter
-      ),
-
-    latitude:
-      getNumberValue(
-        coordinate?.latitude
-      ),
-
-    longitude:
-      getNumberValue(
-        coordinate?.longitude
-      ),
-
-    time:
-      getReportTime(
-        telegram,
-        report,
-        earthquake
-      ),
-
-    points:
-      normalizeStations(
-        intensity
-      ),
-
-    scaleList:
-      getScaleList(),
-
-    telegramType:
-      telegram.head?.type ?? "VXSE53",
+    eventId: getEventId(telegram, report, earthquake),
+    reportNumber: getReportNumber(telegram, report, body),
+    place: hypocenter?.name ?? "震源調査中",
+    scale: convertDmdataIntensityToScale(maxInt),
+    intensity: convertDmdataIntensityText(maxInt),
+    longPeriodIntensity: getLongPeriodIntensity(intensity),
+    magnitude: getMagnitudeValue(earthquake, hypocenter),
+    depth: getDepthValue(hypocenter),
+    latitude: getNumberValue(coordinate?.latitude),
+    longitude: getNumberValue(coordinate?.longitude),
+    time: getReportTime(telegram, report, earthquake),
+    points: normalizeStations(intensity),
+    scaleList: getScaleList(),
+    telegramType: telegram.head?.type ?? "VXSE53"
   };
 }
 
 function parseVXSE51(telegram) {
-  const {
-    report,
-    body
-  } =
-    getReportAndBody(telegram);
-
-  const intensity =
-    body?.intensity;
-
-  const maxInt =
-    intensity?.maxInt;
+  const { report, body } = getReportAndBody(telegram);
+  const intensity = body?.intensity;
+  const maxInt = intensity?.maxInt;
 
   return {
-    eventId:
-      getEventId(
-        telegram,
-        report,
-        body?.earthquake
-      ),
-
-    reportNumber:
-      getReportNumber(
-        telegram,
-        report,
-        body
-      ),
-
-    place:
-      "震源調査中",
-
-    scale:
-      convertDmdataIntensityToScale(
-        maxInt
-      ),
-
-    intensity:
-      convertDmdataIntensityText(
-        maxInt
-      ),
-
-    longPeriodIntensity:
-      getLongPeriodIntensity(
-        intensity
-      ),
-
-    magnitude:
-      "-",
-
-    depth:
-      "-",
-
-    latitude:
-      null,
-
-    longitude:
-      null,
-
-    time:
-      body?.pressDateTime ??
-      getReportTime(
-        telegram,
-        report,
-        body?.earthquake
-      ),
-
-    points:
-      normalizeStations(
-        intensity
-      ),
-
-    scaleList:
-      getScaleList(),
-
-    telegramType:
-     "VXSE51",  
+    eventId: getEventId(telegram, report, body?.earthquake),
+    reportNumber: getReportNumber(telegram, report, body),
+    place: "震源調査中",
+    scale: convertDmdataIntensityToScale(maxInt),
+    intensity: convertDmdataIntensityText(maxInt),
+    longPeriodIntensity: getLongPeriodIntensity(intensity),
+    magnitude: "-",
+    depth: "-",
+    latitude: null,
+    longitude: null,
+    time: body?.pressDateTime ?? getReportTime(telegram, report, body?.earthquake),
+    points: normalizeStations(intensity),
+    scaleList: getScaleList(),
+    telegramType: "VXSE51"
   };
 }
 
 function parseVXSE52(telegram) {
-  const {
-    report,
-    body
-  } =
-    getReportAndBody(telegram);
-
-  const earthquake =
-    body?.earthquake;
-
-  const hypocenter =
-    earthquake?.hypocenter;
-
-  const coordinate =
-    getHypocenterCoordinate(
-      hypocenter
-    );
+  const { report, body } = getReportAndBody(telegram);
+  const earthquake = body?.earthquake;
+  const hypocenter = earthquake?.hypocenter;
+  const coordinate = getHypocenterCoordinate(hypocenter);
 
   return {
-    eventId:
-      getEventId(
-        telegram,
-        report,
-        earthquake
-      ),
-
-    reportNumber:
-      getReportNumber(
-        telegram,
-        report,
-        body
-      ),
-
-    place:
-      hypocenter?.name ??
-      "震源調査中",
-
-    scale:
-      0,
-
-    intensity:
-      "-",
-
-    longPeriodIntensity:
-      null,
-
-    magnitude:
-      getMagnitudeValue(
-        earthquake,
-        hypocenter
-      ),
-
-    depth:
-      getDepthValue(
-        hypocenter
-      ),
-
-    latitude:
-      getNumberValue(
-        coordinate?.latitude
-      ),
-
-    longitude:
-      getNumberValue(
-        coordinate?.longitude
-      ),
-
-    time:
-      getReportTime(
-        telegram,
-        report,
-        earthquake
-      ),
-
-    points:
-      [],
-
-    scaleList:
-      getScaleList(),
-
-    telegramType:
-      "VXSE52",  
+    eventId: getEventId(telegram, report, earthquake),
+    reportNumber: getReportNumber(telegram, report, body),
+    place: hypocenter?.name ?? "震源調査中",
+    scale: 0,
+    intensity: "-",
+    longPeriodIntensity: null,
+    magnitude: getMagnitudeValue(earthquake, hypocenter),
+    depth: getDepthValue(hypocenter),
+    latitude: getNumberValue(coordinate?.latitude),
+    longitude: getNumberValue(coordinate?.longitude),
+    time: getReportTime(telegram, report, earthquake),
+    points: [],
+    scaleList: getScaleList(),
+    telegramType: "VXSE52"
   };
 }
 
 function parseDmdataEew(telegram) {
-  const {
-    report,
-    body
-  } =
-    getReportAndBody(telegram);
-
-  const earthquake =
-    body?.earthquake;
-
-  const hypocenter =
-    earthquake?.hypocenter;
-
-  const coordinate =
-    getHypocenterCoordinate(
-      hypocenter
-    );
-
-  const intensity =
-    body?.intensity;
+  const { report, body } = getReportAndBody(telegram);
+  const earthquake = body?.earthquake;
+  const hypocenter = earthquake?.hypocenter;
+  const coordinate = getHypocenterCoordinate(hypocenter);
+  const intensity = body?.intensity;
 
   const maxInt =
     intensity?.forecastMaxInt ??
@@ -630,89 +464,24 @@ function parseDmdataEew(telegram) {
     body?.maxInt;
 
   return {
-    eventId:
-      getEventId(
-        telegram,
-        report,
-        earthquake
-      ),
-
-    type:
-      telegram.head?.type,
-
-    telegramType:
-      telegram.head?.type ?? "VXSE45",
-
-    isReplay:
-      telegram.__replay === true,
-
-    isWarning:
-      body?.isWarning === true,
-
-    isLastInfo:
-      body?.isLastInfo === true,
-
-    isCanceled:
-      body?.isCanceled === true,
-
-    reportNumber:
-      getReportNumber(
-        telegram,
-        report,
-        body
-      ),
-
-    place:
-      hypocenter?.name ??
-      "震源調査中",
-
-    scale:
-      convertDmdataIntensityToScale(
-        maxInt
-      ),
-
-    intensity:
-      convertDmdataIntensityText(
-        maxInt
-      ),
-
-    longPeriodIntensity:
-      getLongPeriodIntensity(
-        intensity
-      ),
-
-    magnitude:
-      getMagnitudeValue(
-        earthquake,
-        hypocenter
-      ),
-
-    depth:
-      getDepthValue(
-        hypocenter
-      ),
-
-    latitude:
-      getNumberValue(
-        coordinate?.latitude
-      ),
-
-    longitude:
-      getNumberValue(
-        coordinate?.longitude
-      ),
-
-    time:
-      getReportTime(
-        telegram,
-        report,
-        earthquake
-      ),
-
-    regions:
-      intensity?.regions ??
-      body?.regions ??
-      []
+    eventId: getEventId(telegram, report, earthquake),
+    type: telegram.head?.type,
+    telegramType: telegram.head?.type ?? "VXSE45",
+    isReplay: telegram.__replay === true,
+    isWarning: body?.isWarning === true,
+    isLastInfo: body?.isLastInfo === true,
+    isCanceled: body?.isCanceled === true,
+    reportNumber: getReportNumber(telegram, report, body),
+    place: hypocenter?.name ?? "震源調査中",
+    scale: convertDmdataIntensityToScale(maxInt),
+    intensity: convertDmdataIntensityText(maxInt),
+    longPeriodIntensity: getLongPeriodIntensity(intensity),
+    magnitude: getMagnitudeValue(earthquake, hypocenter),
+    depth: getDepthValue(hypocenter),
+    latitude: getNumberValue(coordinate?.latitude),
+    longitude: getNumberValue(coordinate?.longitude),
+    time: getReportTime(telegram, report, earthquake),
+    regions: intensity?.regions ?? body?.regions ?? []
   };
 }
 
