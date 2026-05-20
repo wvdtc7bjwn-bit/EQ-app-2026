@@ -364,65 +364,69 @@
 
       <div class="current-panel" id="current-panel">
 
-        <div id="status-banner" class="status-banner">
-          地震情報
-        </div>
-
-        <div class="quake-info">
-
-          <div id="eew-area" class="hidden">
-            --
+        <div id="earthquake-view">
+          <div id="status-banner" class="status-banner">
+            地震情報
           </div>
 
-          <div id="quake-place">
-            読み込み中...
-          </div>
+          <div class="quake-info">
 
-          <div id="quake-time">
-            --
-          </div>
-
-          <div id="intensity-box">
-            <div class="intensity-label">
-              最大震度
+            <div id="eew-area" class="hidden">
+              --
             </div>
 
-            <div id="intensity-value">
-              -
+            <div id="quake-place">
+              読み込み中...
             </div>
-          </div>
 
-          <div id="lng-box" class="hidden">
-            <div>
-              <div class="lng-top">推定</div>
-              <div class="lng-bottom">
-                最大長周期<br>
-                地震動階級
+            <div id="quake-time">
+              --
+            </div>
+
+            <div id="intensity-box">
+              <div class="intensity-label">
+                最大震度
+              </div>
+
+              <div id="intensity-value">
+                -
               </div>
             </div>
 
-            <div id="lng-value">1</div>
-          </div>
+            <div id="lng-box" class="hidden">
+              <div>
+                <div class="lng-top">推定</div>
+                <div class="lng-bottom">
+                  最大長周期<br>
+                  地震動階級
+                </div>
+              </div>
 
-          <div class="detail-box">
-            <div class="detail-row">
-              <span>マグニチュード</span>
-              <strong id="magnitude-value">-</strong>
+              <div id="lng-value">1</div>
             </div>
 
-            <div class="detail-row">
-              <span>深さ</span>
-              <strong id="depth-value">-</strong>
+            <div class="detail-box">
+              <div class="detail-row">
+                <span>マグニチュード</span>
+                <strong id="magnitude-value">-</strong>
+              </div>
+
+              <div class="detail-row">
+                <span>深さ</span>
+                <strong id="depth-value">-</strong>
+              </div>
             </div>
+
+            <div class="quake-desc"></div>
+
+            <div id="tsunami-box">
+              津波情報：調査中
+            </div>
+
           </div>
-
-          <div class="quake-desc"></div>
-
-          <div id="tsunami-box">
-            津波情報：調査中
-          </div>
-
         </div>
+
+        <div id="tsunami-view" class="hidden"></div>
       </div>
 
       <div class="points-panel hidden" id="points-panel">
