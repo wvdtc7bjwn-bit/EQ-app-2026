@@ -17,6 +17,10 @@ const {
   startKyoshinMonitor
 } = require("./server/kyoshinService");
 
+const {
+  initDatabase
+} = require("./server/db/initDatabase");
+
 const API_KEY =
   process.env.DMDATA_API_KEY;
 
@@ -230,11 +234,23 @@ function handleDmdataMessage(message) {
   routeTelegram(data, io);
 }
 
-server.listen(PORT, () => {
-  console.log(`サーバー起動 http://localhost:${PORT}`);
-  console.log(`DMDATA_TEST_MODE=${DMDATA_TEST_MODE}`);
-  console.log(`SAVE_TELEGRAM_SAMPLE=${SAVE_TELEGRAM_SAMPLE}`);
+async function startApp() {
+  try {
+    await initDatabase();
+  }
+  catch (error) {
+    console.error("DB初期化失敗:");
+    console.error(error);
+  }
 
-  startDmdataSocket();
-  startKyoshinMonitor(io);
-});
+  server.listen(PORT, () => {
+    console.log(`サーバー起動 http://localhost:${PORT}`);
+    console.log(`DMDATA_TEST_MODE=${DMDATA_TEST_MODE}`);
+    console.log(`SAVE_TELEGRAM_SAMPLE=${SAVE_TELEGRAM_SAMPLE}`);
+
+    startDmdataSocket();
+    startKyoshinMonitor(io);
+  });
+}
+
+startApp();
