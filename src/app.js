@@ -39,7 +39,8 @@ import {
   clearSvgEewWaves,
   updateKyoshinDots,
   setKyoshinDisplayMode,
-  updateTsunamiAreas
+  updateTsunamiAreas,
+  setEarthquakeMarkerVisible
 } from "./map/japanSvgMap.js";
 
 let currentMainTab = "earthquake";
@@ -144,12 +145,15 @@ function applyMainTab(tab) {
   if (tab === "earthquake") {
     setMainMode("earthquake");
     setKyoshinDisplayMode("active-only");
+    setEarthquakeMarkerVisible(true);
   }
   else if (tab === "kyoshin") {
     setKyoshinDisplayMode("normal");
+    setEarthquakeMarkerVisible(false);
   }
   else if (tab === "tsunami") {
     setKyoshinDisplayMode("active-only");
+    setEarthquakeMarkerVisible(false);
   }
 }
 
