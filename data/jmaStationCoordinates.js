@@ -1,24 +1,17 @@
 // JMA震度観測点の座標補完用データ。
 // VXSE53には基本的に緯度経度が含まれないため、観測点コードまたは観測点名から座標を補完します。
-//
-// 今後、気象庁などの公開マスターデータから正式な観測点データを追加していきます。
 
-const stationCoordinatesByCode = {
-  // 例:
-  // "123456": {
-  //   name: "東京千代田区大手町",
-  //   latitude: 35.6895,
-  //   longitude: 139.6917
-  // }
-};
+let stationCoordinatesByCode = {};
 
-const stationCoordinatesByName = {
-  // 例:
-  // "東京千代田区大手町": {
-  //   latitude: 35.6895,
-  //   longitude: 139.6917
-  // }
-};
+try {
+  stationCoordinatesByCode = require("../local-data/stations.compact.json");
+}
+catch (error) {
+  console.warn(
+    "stations.compact.json が読み込めません。観測点座標補完は無効です。",
+    error.message
+  );
+}
 
 function normalizeStationName(name) {
   if (!name) {
@@ -33,10 +26,6 @@ function normalizeStationName(name) {
 
 function buildNormalizedNameIndex() {
   const index = {};
-
-  Object.entries(stationCoordinatesByName).forEach(([name, value]) => {
-    index[normalizeStationName(name)] = value;
-  });
 
   Object.values(stationCoordinatesByCode).forEach(value => {
     if (value?.name) {
@@ -73,6 +62,5 @@ function findStationCoordinate({ code, name }) {
 
 module.exports = {
   stationCoordinatesByCode,
-  stationCoordinatesByName,
   findStationCoordinate
 };
