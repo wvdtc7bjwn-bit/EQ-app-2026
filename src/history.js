@@ -5,12 +5,38 @@ import {
 const historyCards =
   new Map();
 
+let latestEventId = null;
+
+export function setLatestHistoryEvent(data) {
+  const eventId = getEventId(data);
+
+  if (!eventId) {
+    return;
+  }
+
+  latestEventId = eventId;
+
+  const latestCard = historyCards.get(eventId);
+
+  if (latestCard) {
+    latestCard.remove();
+    historyCards.delete(eventId);
+  }
+}
+
 export function addHistory(data) {
   const history =
     document.getElementById("history");
 
-  const eventId =
-    data.eventId ?? `${data.time}-${data.place}`;
+  if (!history) {
+    return;
+  }
+
+  const eventId = getEventId(data);
+
+  if (!eventId || eventId === latestEventId) {
+    return;
+  }
 
   let card =
     historyCards.get(eventId);
@@ -36,13 +62,13 @@ export function addHistory(data) {
   card.innerHTML = `
     <div class="history-intensity" style="background:${color}">
       <span>最大震度</span>
-      <strong>${data.intensity}</strong>
+      <strong>${data.intensity ?? "-"}</strong>
     </div>
 
     <div class="history-info">
-      <div class="history-place">${data.place}</div>
+      <div class="history-place">${data.place ?? "震源調査中"}</div>
       <div>${formatShortTime(data.time)}</div>
-      <div>深さ ${formatDepth(data.depth)}　M ${data.magnitude}</div>
+      <div>深さ ${formatDepth(data.depth)}　M ${data.magnitude ?? "-"}</div>
     </div>
   `;
 
@@ -50,8 +76,20 @@ export function addHistory(data) {
     const lastChild =
       history.lastChild;
 
+    if (!lastChild) {
+      break;
+    }
+
     history.removeChild(lastChild);
   }
+}
+
+function getEventId(data) {
+  return (
+    data?.eventId ??
+    data?.event_id ??
+    `${data?.time ?? data?.origin_time}-${data?.place ?? ""}`
+  );
 }
 
 function formatDepth(depth) {
