@@ -6,6 +6,14 @@ const historyCards =
   new Map();
 
 let latestEventId = null;
+let historySelectHandler = null;
+
+export function setHistorySelectHandler(handler) {
+  historySelectHandler =
+    typeof handler === "function"
+      ? handler
+      : null;
+}
 
 export function setLatestHistoryEvent(data) {
   const eventId = getEventId(data);
@@ -46,10 +54,17 @@ export function addHistory(data) {
 
   if (!card) {
     card =
-      document.createElement("div");
+      document.createElement("button");
 
+    card.type = "button";
     card.className =
       "history-card";
+
+    card.addEventListener("click", () => {
+      if (historySelectHandler) {
+        historySelectHandler(data);
+      }
+    });
 
     historyCards.set(
       eventId,
@@ -58,6 +73,20 @@ export function addHistory(data) {
 
     history.prepend(card);
   }
+  else {
+    card.onclick = null;
+    card.addEventListener("click", () => {
+      if (historySelectHandler) {
+        historySelectHandler(data);
+      }
+    }, { once: true });
+  }
+
+  card.dataset.eventId = eventId;
+  card.setAttribute(
+    "aria-label",
+    `${data.place ?? "震源調査中"}の地震情報を表示`
+  );
 
   card.innerHTML = `
     <div class="history-intensity" style="background:${color}">
