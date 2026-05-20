@@ -1,6 +1,7 @@
 node_modules
 .env
-local-data/
+local-data/*
+!local-data/stations.compact.json
 src/map/data/japanGeoJson.js
 public/mapdata/
 sample-data/
