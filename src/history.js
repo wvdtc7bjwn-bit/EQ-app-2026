@@ -54,13 +54,27 @@ export function addHistory(data) {
 
   if (!card) {
     card =
-      document.createElement("button");
+      document.createElement("div");
 
-    card.type = "button";
     card.className =
       "history-card";
 
+    card.setAttribute("role", "button");
+    card.setAttribute("tabindex", "0");
+
     card.addEventListener("click", () => {
+      if (historySelectHandler) {
+        historySelectHandler(data);
+      }
+    });
+
+    card.addEventListener("keydown", event => {
+      if (event.key !== "Enter" && event.key !== " ") {
+        return;
+      }
+
+      event.preventDefault();
+
       if (historySelectHandler) {
         historySelectHandler(data);
       }
@@ -72,14 +86,6 @@ export function addHistory(data) {
     );
 
     history.prepend(card);
-  }
-  else {
-    card.onclick = null;
-    card.addEventListener("click", () => {
-      if (historySelectHandler) {
-        historySelectHandler(data);
-      }
-    }, { once: true });
   }
 
   card.dataset.eventId = eventId;
