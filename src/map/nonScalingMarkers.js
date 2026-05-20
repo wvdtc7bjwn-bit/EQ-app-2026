@@ -5,6 +5,8 @@ import {
 let initialized = false;
 let svgObserver = null;
 let layerObserver = null;
+let refreshAnimationId = null;
+let lastZoomScale = 1;
 
 function getZoomScale(svgRoot) {
   const viewBoxText =
@@ -28,12 +30,11 @@ function getZoomScale(svgRoot) {
 }
 
 function getNonScalingSize(
-  svgRoot,
+  zoomScale,
   baseSize,
   minSize,
   maxSize
 ) {
-  const zoomScale = getZoomScale(svgRoot);
   const size = baseSize / zoomScale;
 
   return Math.max(
@@ -62,7 +63,7 @@ function getCircleBaseRadius(circle) {
   return baseRadius;
 }
 
-function updateIntensityDots(svgRoot) {
+function updateIntensityDots(svgRoot, zoomScale) {
   const circles =
     svgRoot.querySelectorAll(
       "#intensity-layer circle"
@@ -75,7 +76,7 @@ function updateIntensityDots(svgRoot) {
     circle.setAttribute(
       "r",
       getNonScalingSize(
-        svgRoot,
+        zoomScale,
         baseRadius,
         1.1,
         baseRadius
@@ -85,7 +86,7 @@ function updateIntensityDots(svgRoot) {
     circle.setAttribute(
       "stroke-width",
       getNonScalingSize(
-        svgRoot,
+        zoomScale,
         0.7,
         0.22,
         0.7
@@ -94,7 +95,7 @@ function updateIntensityDots(svgRoot) {
   });
 }
 
-function updateHypocenterMarker(svgRoot) {
+function updateHypocenterMarker(svgRoot, zoomScale) {
   const crosses =
     svgRoot.querySelectorAll(
       "#hypocenter-layer text"
@@ -104,7 +105,7 @@ function updateHypocenterMarker(svgRoot) {
     cross.setAttribute(
       "font-size",
       getNonScalingSize(
-        svgRoot,
+        zoomScale,
         20,
         6,
         20
@@ -114,7 +115,7 @@ function updateHypocenterMarker(svgRoot) {
     cross.setAttribute(
       "stroke-width",
       getNonScalingSize(
-        svgRoot,
+        zoomScale,
         0.7,
         0.18,
         0.7
@@ -131,8 +132,24 @@ function updateNonScalingMarkers() {
     return;
   }
 
-  updateIntensityDots(svgRoot);
-  updateHypocenterMarker(svgRoot);
+  const zoomScale =
+    getZoomScale(svgRoot);
+
+  lastZoomScale = zoomScale;
+
+  updateIntensityDots(svgRoot, zoomScale);
+  updateHypocenterMarker(svgRoot, zoomScale);
+}
+
+function requestMarkerRefresh() {
+  if (refreshAnimationId) {
+    return;
+  }
+
+  refreshAnimationId = requestAnimationFrame(() => {
+    refreshAnimationId = null;
+    updateNonScalingMarkers();
+  });
 }
 
 function observeMarkerLayers(svgRoot) {
@@ -150,7 +167,7 @@ function observeMarkerLayers(svgRoot) {
   }
 
   layerObserver = new MutationObserver(() => {
-    updateNonScalingMarkers();
+    requestMarkerRefresh();
   });
 
   targetLayers.forEach(layer => {
@@ -162,11 +179,6 @@ function observeMarkerLayers(svgRoot) {
 }
 
 export function initializeNonScalingMarkers() {
-  if (initialized) {
-    updateNonScalingMarkers();
-    return;
-  }
-
   const svgRoot =
     document.getElementById("japan-svg-map");
 
@@ -174,10 +186,21 @@ export function initializeNonScalingMarkers() {
     return;
   }
 
+  if (initialized) {
+    requestMarkerRefresh();
+    return;
+  }
+
   initialized = true;
 
   svgObserver = new MutationObserver(() => {
-    updateNonScalingMarkers();
+    const zoomScale = getZoomScale(svgRoot);
+
+    if (Math.abs(zoomScale - lastZoomScale) < 0.015) {
+      return;
+    }
+
+    requestMarkerRefresh();
   });
 
   svgObserver.observe(svgRoot, {
@@ -186,9 +209,9 @@ export function initializeNonScalingMarkers() {
   });
 
   observeMarkerLayers(svgRoot);
-  updateNonScalingMarkers();
+  requestMarkerRefresh();
 }
 
 export function refreshNonScalingMarkers() {
-  updateNonScalingMarkers();
+  requestMarkerRefresh();
 }
