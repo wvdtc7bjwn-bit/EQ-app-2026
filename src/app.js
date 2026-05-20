@@ -334,9 +334,9 @@ setupMainTabs(tab => {
 });
 
 applyMainTab("earthquake");
-loadEarthquakeHistory(11).then(() => {
-  if (!latestEarthquakeData) {
-    latestEarthquakeData = latestEarthquakeByEventId.get("latest") ?? null;
+loadEarthquakeHistory(11).then(latest => {
+  if (latest) {
+    latestEarthquakeData = latest;
   }
 });
 
