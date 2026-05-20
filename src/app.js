@@ -49,6 +49,57 @@ let eewTimeoutTimer = null;
 let temporaryInfoTimer = null;
 let latestEewData = null;
 
+const latestEarthquakeByEventId = new Map();
+
+function getEarthquakeCacheKey(data) {
+  return (
+    data.eventId ??
+    data.time ??
+    "latest"
+  );
+}
+
+function hasValidIntensity(data) {
+  return (
+    data &&
+    data.intensity !== null &&
+    data.intensity !== undefined &&
+    data.intensity !== "" &&
+    data.intensity !== "-"
+  );
+}
+
+function mergeEarthquakeInfo(data) {
+  const key = getEarthquakeCacheKey(data);
+  const previous = latestEarthquakeByEventId.get(key);
+
+  const merged = {
+    ...(previous ?? {}),
+    ...data
+  };
+
+  if (!hasValidIntensity(data) && hasValidIntensity(previous)) {
+    merged.intensity = previous.intensity;
+    merged.scale = previous.scale;
+    merged.longPeriodIntensity = previous.longPeriodIntensity;
+  }
+
+  if (
+    (!data.points || data.points.length === 0) &&
+    previous?.points?.length > 0
+  ) {
+    merged.points = previous.points;
+  }
+
+  if (!data.scaleList && previous?.scaleList) {
+    merged.scaleList = previous.scaleList;
+  }
+
+  latestEarthquakeByEventId.set(key, merged);
+
+  return merged;
+}
+
 function clearEewTimers() {
   if (eewEndTimer) {
     clearTimeout(eewEndTimer);
@@ -98,7 +149,7 @@ function applyMainTab(tab) {
     setKyoshinDisplayMode("normal");
   }
   else if (tab === "tsunami") {
-  setKyoshinDisplayMode("active-only");
+    setKyoshinDisplayMode("active-only");
   }
 }
 
@@ -124,6 +175,8 @@ function restoreEewView() {
 }
 
 function showTemporaryEarthquakeInfo(data) {
+  const mergedData = mergeEarthquakeInfo(data);
+
   if (temporaryInfoTimer) {
     clearTimeout(temporaryInfoTimer);
     temporaryInfoTimer = null;
@@ -133,23 +186,23 @@ function showTemporaryEarthquakeInfo(data) {
 
   setMainMode("earthquake");
 
-  updateCurrentInfo(data);
+  updateCurrentInfo(mergedData);
   updateTime();
 
   updatePoints(
-    data.points,
-    data.scaleList
+    mergedData.points,
+    mergedData.scaleList
   );
 
   updateSvgIntensityPoints(
-    data.points,
-    data.scaleList
+    mergedData.points,
+    mergedData.scaleList
   );
 
-  if (hasCoordinate(data)) {
+  if (hasCoordinate(mergedData)) {
     updateSvgHypocenter(
-      data.latitude,
-      data.longitude
+      mergedData.latitude,
+      mergedData.longitude
     );
   }
 
@@ -181,27 +234,29 @@ socket.on("earthquake", (data) => {
     return;
   }
 
-  if (data.telegramType === "VXSE53") {
+  const mergedData = mergeEarthquakeInfo(data);
+
+  if (mergedData.telegramType === "VXSE53") {
     endEewMode("vxse53");
   }
 
   applyMainTab("earthquake");
 
-  setLatestEarthquakeInfo(data);
+  setLatestEarthquakeInfo(mergedData);
 
   updateSvgIntensityPoints(
-    data.points,
-    data.scaleList
+    mergedData.points,
+    mergedData.scaleList
   );
 
   updateIntensityAreas(
-    data.regions ?? []
+    mergedData.regions ?? []
   );
 
-  if (hasCoordinate(data)) {
+  if (hasCoordinate(mergedData)) {
     updateSvgHypocenter(
-      data.latitude,
-      data.longitude
+      mergedData.latitude,
+      mergedData.longitude
     );
   }
 });
@@ -283,7 +338,7 @@ socket.on("tsunami", data => {
 
   setLatestTsunamiInfo(data);
 
-   applyMainTab("tsunami");
+  applyMainTab("tsunami");
 
   updateTsunamiAreas(
     data.areas ?? []
