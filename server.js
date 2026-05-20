@@ -21,6 +21,9 @@ const {
   initDatabase
 } = require("./server/db/initDatabase");
 
+const historyApiRouter =
+  require("./server/routes/historyApi");
+
 const API_KEY =
   process.env.DMDATA_API_KEY;
 
@@ -52,6 +55,11 @@ app.use(
     dotfiles: "ignore",
     index: "index.html"
   })
+);
+
+app.use(
+  "/api",
+  historyApiRouter
 );
 
 io.on("connection", (socket) => {
