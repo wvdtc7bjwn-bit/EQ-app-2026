@@ -129,6 +129,102 @@ export function showEEW(
   );
 }
 
+export function renderEEWCard(data, options = {}) {
+  const isWarning = options.isWarning ?? data?.isWarning ?? false;
+  const reportNumber = options.reportNumber ?? data?.reportNumber ?? null;
+  const reportText = reportNumber ? ` #${reportNumber}` : "";
+
+  if (!data) {
+    return `
+      <div class="kyoshin-empty-message">
+        緊急地震速報は<br>
+        現在発表されていません
+      </div>
+    `;
+  }
+
+  const statusText = isWarning
+    ? `緊急地震速報　警報${reportText}`
+    : `緊急地震速報　予報${reportText}`;
+
+  const statusStyle = isWarning
+    ? "background: linear-gradient(180deg, #dc2626 0%, #991b1b 100%); color: white;"
+    : "background: linear-gradient(180deg, #d9c55f 0%, #b8942f 100%); color: #111;";
+
+  const descText = isWarning
+    ? "緊急地震速報（警報）発表<br>強い揺れに警戒してください"
+    : "緊急地震速報（予報）発表<br>揺れに注意してください";
+
+  return `
+    <div class="status-banner" style="${statusStyle}">
+      ${statusText}
+    </div>
+
+    <div class="quake-info">
+      <div id="eew-area">
+        ${data.place ?? "震源調査中"} <small>で地震</small>
+      </div>
+
+      <div id="quake-time">
+        ${formatTime(data.time)} 発生
+      </div>
+
+      <div id="intensity-box" style="background: ${getIntensityColor(data.scale)};">
+        <div class="intensity-label">
+          推定最大震度
+        </div>
+
+        <div id="intensity-value">
+          ${data.intensity ?? "-"}
+        </div>
+      </div>
+
+      ${renderLongPeriodHtml(data.longPeriodIntensity)}
+
+      <div class="detail-box">
+        <div class="detail-row">
+          <span>マグニチュード</span>
+          <strong>${formatMagnitude(data.magnitude)}</strong>
+        </div>
+
+        <div class="detail-row">
+          <span>深さ</span>
+          <strong>${formatDepth(data.depth)}</strong>
+        </div>
+      </div>
+
+      <div class="quake-desc" style="color: ${isWarning ? "#f5df8a" : "#e2e8f0"};">
+        ${descText}
+      </div>
+    </div>
+  `;
+}
+
+function renderLongPeriodHtml(longPeriodIntensity) {
+  if (
+    longPeriodIntensity === null ||
+    longPeriodIntensity === undefined ||
+    longPeriodIntensity === "-" ||
+    longPeriodIntensity === ""
+  ) {
+    return "";
+  }
+
+  return `
+    <div id="lng-box">
+      <div>
+        <div class="lng-top">推定</div>
+        <div class="lng-bottom">
+          最大長周期<br>
+          地震動階級
+        </div>
+      </div>
+
+      <div id="lng-value">${longPeriodIntensity}</div>
+    </div>
+  `;
+}
+
 function updateLongPeriodBox(
   lngBox,
   lngValue,
