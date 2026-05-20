@@ -398,6 +398,7 @@ export function updatePoints(points, scaleList) {
 
   if (!points || points.length === 0) {
     pointsDiv.textContent = "観測点情報なし";
+    pointsDiv.style.color = "#ffffff";
     return;
   }
 
@@ -419,10 +420,18 @@ export function updatePoints(points, scaleList) {
     const prefecture = document.createElement("div");
     prefecture.className = "intensity-summary-pref";
     prefecture.textContent = "[観測点]";
+    prefecture.style.color = "#ffffff";
 
     const names = document.createElement("div");
     names.className = "intensity-summary-names";
-    names.textContent = group.names.join("　");
+
+    group.names.forEach(name => {
+      const nameRow = document.createElement("div");
+      nameRow.className = "intensity-summary-name";
+      nameRow.textContent = name;
+      nameRow.style.color = "#ffffff";
+      names.appendChild(nameRow);
+    });
 
     body.appendChild(prefecture);
     body.appendChild(names);
